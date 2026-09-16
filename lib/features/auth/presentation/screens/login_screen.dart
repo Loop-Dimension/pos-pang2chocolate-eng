@@ -30,7 +30,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${e.toString()}')),
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -41,69 +44,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Container(
-          width: 400.w,
-          padding: EdgeInsets.all(32.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+      backgroundColor: const Color(0xFFF0F0F0),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(Icons.point_of_sale, size: 64.w),
-              SizedBox(height: 16.h),
+              const Spacer(),
+              // Logo placeholder or text
               Text(
-                'Pang2Chocolate POS',
+                '팽이 POS',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
                 ),
               ),
-              SizedBox(height: 8.h),
-              Text(
-                'Sign in with your merchant account',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: Colors.grey.shade600,
+              SizedBox(height: 64.h),
+              
+              // Email / Password Form (Assuming direct login for now)
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                padding: EdgeInsets.all(20.w),
+                child: Column(
+                  children: [
+                    CustomTextField(
+                      labelText: 'Email',
+                      controller: _emailController,
+                      hintText: 'Enter your Pangyi account email',
+                    ),
+                    SizedBox(height: 16.h),
+                    CustomTextField(
+                      labelText: 'Password',
+                      controller: _passwordController,
+                      obscureText: true,
+                      hintText: 'Enter your password',
+                    ),
+                    SizedBox(height: 24.h),
+                    PrimaryButton(
+                      text: 'Login with Pangyi Chocolate Account',
+                      isLoading: _isLoading,
+                      onPressed: _handleLogin,
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 32.h),
-              CustomTextField(
-                labelText: 'Email',
-                controller: _emailController,
-                hintText: 'Enter your email',
-              ),
-              SizedBox(height: 16.h),
-              CustomTextField(
-                labelText: 'Password',
-                controller: _passwordController,
-                obscureText: true,
-                hintText: 'Enter your password',
-              ),
-              SizedBox(height: 24.h),
-              PrimaryButton(
-                text: 'Login',
-                isLoading: _isLoading,
-                onPressed: _handleLogin,
-              ),
-              SizedBox(height: 16.h),
+              
+              const Spacer(),
               TextButton(
                 onPressed: () => context.push('/register'),
-                child: const Text(
-                  'Don\'t have an account? Request Partnership',
-                  style: TextStyle(color: Colors.black87),
+                child: Text(
+                  'Not registered? Request POS Partnership',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
+              SizedBox(height: 24.h),
             ],
           ),
         ),

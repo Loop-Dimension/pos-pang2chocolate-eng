@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
+
 
 class ProfileImagePicker extends StatelessWidget {
   final XFile? selectedImage;
@@ -18,7 +18,8 @@ class ProfileImagePicker extends StatelessWidget {
 
   Future<void> _pickImage() async {
     try {
-      final XFile? image = await ImagePickerHelper.pickImage();
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         onImagePicked(image);
       }
