@@ -42,6 +42,7 @@ dependencies:
   firebase_auth: ^6.7.0
   cloud_firestore: ^6.10.0
   flutter_dotenv: ^6.0.1
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +67,18 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/
+    - .env
+
+  fonts:
+    - family: ABeeZee
+      fonts:
+        - asset: fonts/ABeeZee-Regular.ttf
+    - family: NotoSans
+      fonts:
+        - asset: fonts/NotoSansKR-VariableFont_wght.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

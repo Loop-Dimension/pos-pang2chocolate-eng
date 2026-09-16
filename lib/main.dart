@@ -34,8 +34,8 @@ class PangPosApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return ScreenUtilInit(
-      // The design size from standard tablet POS
-      designSize: const Size(1024, 768),
+      // The design size from standard mobile POS
+      designSize: const Size(428, 926),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
