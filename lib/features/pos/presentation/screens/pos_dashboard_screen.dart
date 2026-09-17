@@ -7,6 +7,7 @@ import 'order_history_tab.dart';
 import 'category_edit_screen.dart';
 import 'inventory_screen.dart';
 import 'product_management_screen.dart';
+import 'store_info_screen.dart';
 
 class PosDashboardScreen extends StatefulWidget {
   const PosDashboardScreen({super.key});
@@ -91,8 +92,7 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductManagementScreen()));
                           break;
                         case 'store_info':
-                          // Store info screen is not yet requested, show snackbar or do nothing
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('가게 정보는 준비 중입니다.')));
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreInfoScreen()));
                           break;
                       }
                     },

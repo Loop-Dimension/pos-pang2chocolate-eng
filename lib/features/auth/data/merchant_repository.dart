@@ -59,6 +59,16 @@ class MerchantRepository {
     });
   }
 
+  Future<void> updateMerchantData(
+    String uid,
+    Map<String, dynamic> updates,
+  ) async {
+    await _firestore.collection('merchants').doc(uid).update({
+      ...updates,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<String> uploadProfileImage(XFile image, String uid) async {
     final originalBytes = await image.readAsBytes();
     final preparedData = await ImageUploadHelper.prepareImageForUpload(
