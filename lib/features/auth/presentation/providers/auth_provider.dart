@@ -22,6 +22,14 @@ final merchantStatusProvider = StreamProvider<String?>((ref) {
   return ref.watch(merchantRepositoryProvider).getMerchantStatus(user.uid);
 });
 
+final merchantDataProvider = StreamProvider<Map<String, dynamic>?>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    return Stream.value(null);
+  }
+  return ref.watch(merchantRepositoryProvider).getMerchantData(user.uid);
+});
+
 final authStatusProvider = Provider<AuthStatus>((ref) {
   final user = ref.watch(authStateProvider).value;
   final merchantStatus = ref.watch(merchantStatusProvider).value;

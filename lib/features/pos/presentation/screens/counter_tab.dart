@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../providers/cart_provider.dart';
 import '../widgets/checkout_cart_sheet.dart';
 
-class CounterTab extends StatefulWidget {
+class CounterTab extends ConsumerStatefulWidget {
   const CounterTab({super.key});
 
   @override
-  State<CounterTab> createState() => _CounterTabState();
+  ConsumerState<CounterTab> createState() => _CounterTabState();
 }
 
-class _CounterTabState extends State<CounterTab> with SingleTickerProviderStateMixin {
+class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProviderStateMixin {
   late TabController _categoryTabController;
 
   @override
@@ -70,57 +72,64 @@ class _CounterTabState extends State<CounterTab> with SingleTickerProviderStateM
           left: 16.w,
           right: 16.w,
           bottom: 24.h,
-          child: GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const CheckoutCartSheet(),
-              );
-            },
-            child: Container(
-            height: 56.h,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: const BoxDecoration(
-                    color: Colors.black,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '6',
-                    style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
-                  ),
+          child: Consumer(builder: (context, ref, child) {
+            final cartItemCount = ref.watch(cartItemCountProvider);
+            if (cartItemCount == 0) return const SizedBox.shrink(); // Hide if empty
+            
+            return GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CheckoutCartSheet(),
+                );
+              },
+              child: Container(
+                height: 56.h,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
                 ),
-                SizedBox(width: 8.w),
-                Text(
-                  '장바구니',
-                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8.w),
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$cartItemCount',
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      '장바구니',
+                      style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          ),
+              ),
+            );
+          }),
         ),
       ],
     );
   }
 
   Widget _buildProductGrid() {
+    final cartItems = ref.watch(cartProvider);
+
     return GridView.builder(
       padding: EdgeInsets.only(left: 16.w, right: 16.w, top: 16.h, bottom: 100.h),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -132,8 +141,8 @@ class _CounterTabState extends State<CounterTab> with SingleTickerProviderStateM
       itemCount: 36,
       itemBuilder: (context, index) {
         final id = index + 1;
-        // Mock active state for id 4, 11, 15, 18, 32
-        final isActive = [4, 11, 15, 18, 32].contains(id);
+        final cartItem = cartItems.where((item) => item.productId == id).firstOrNull;
+        final isActive = cartItem != null;
 
         if (isActive) {
           return Container(
@@ -162,9 +171,15 @@ class _CounterTabState extends State<CounterTab> with SingleTickerProviderStateM
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Icon(Icons.remove, size: 16.w),
-                      Text('1', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                      Icon(Icons.add, size: 16.w),
+                      GestureDetector(
+                        onTap: () => ref.read(cartProvider.notifier).updateQuantity(id, cartItem.quantity - 1),
+                        child: Icon(Icons.remove, size: 16.w),
+                      ),
+                      Text('${cartItem.quantity}', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                      GestureDetector(
+                        onTap: () => ref.read(cartProvider.notifier).updateQuantity(id, cartItem.quantity + 1),
+                        child: Icon(Icons.add, size: 16.w),
+                      ),
                     ],
                   ),
                 ),
@@ -173,16 +188,24 @@ class _CounterTabState extends State<CounterTab> with SingleTickerProviderStateM
           );
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '$id',
-            style: TextStyle(fontSize: 16.sp, color: Colors.black87),
+        return GestureDetector(
+          onTap: () {
+            // Mock prices: 4000 for regular items, etc.
+            int price = 4000;
+            String name = '상품 $id';
+            ref.read(cartProvider.notifier).addItem(id, name, price);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '$id',
+              style: TextStyle(fontSize: 16.sp, color: Colors.black87),
+            ),
           ),
         );
       },

@@ -37,6 +37,17 @@ class MerchantRepository {
     });
   }
 
+  Stream<Map<String, dynamic>?> getMerchantData(String uid) {
+    return _firestore.collection('merchants').doc(uid).snapshots().map((
+      snapshot,
+    ) {
+      if (snapshot.exists) {
+        return snapshot.data();
+      }
+      return null;
+    });
+  }
+
   Future<void> createPendingMerchant(
     String uid,
     Map<String, dynamic> data,

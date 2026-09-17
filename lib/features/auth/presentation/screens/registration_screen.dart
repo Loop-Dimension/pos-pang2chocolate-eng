@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/auth_repository.dart';
@@ -103,6 +104,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             'profileImageUrl': profileImageUrl,
           },
         );
+
+        if (mounted) {
+          // Manually navigate after ALL data is written successfully
+          context.go('/waiting');
+        }
       }
     } catch (e) {
       if (mounted) {

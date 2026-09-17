@@ -48,6 +48,7 @@ dependencies:
   flutter_image_compress: ^2.5.1
   mime: ^2.1.0
   connectivity_plus: ^7.3.1
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

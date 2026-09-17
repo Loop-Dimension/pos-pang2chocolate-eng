@@ -22,6 +22,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (!isLoginRoute && !isRegisterRoute) return '/login';
           break;
         case AuthStatus.pendingApproval:
+          if (isRegisterRoute) return null; // Do not interrupt registration flow
           if (!isWaitingRoute) return '/waiting';
           break;
         case AuthStatus.approved:

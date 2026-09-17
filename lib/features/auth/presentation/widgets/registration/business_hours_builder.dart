@@ -57,6 +57,10 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
     isClosed['금'] = true;
     isClosed['토'] = true;
     isClosed['일'] = true;
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifyChanges();
+    });
   }
 
   void _notifyChanges() {

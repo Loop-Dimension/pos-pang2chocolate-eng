@@ -15,11 +15,19 @@ class PosDashboardScreen extends StatefulWidget {
 
 class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _showSettings = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging || _showSettings) {
+        if (_showSettings) {
+          setState(() => _showSettings = false);
+        }
+      }
+    });
   }
 
   @override
@@ -78,15 +86,15 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                   // Settings Icon Tab
                   GestureDetector(
                     onTap: () {
-                      _tabController.animateTo(3);
+                      setState(() => _showSettings = true);
                     },
                     child: Container(
                       width: 44.h,
                       height: 44.h,
                       decoration: BoxDecoration(
-                        color: _tabController.index == 3 ? Colors.white : Colors.transparent,
+                        color: _showSettings ? Colors.white : Colors.transparent,
                         shape: BoxShape.circle,
-                        boxShadow: _tabController.index == 3
+                        boxShadow: _showSettings
                             ? [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.05),
@@ -98,7 +106,7 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                       ),
                       child: Icon(
                         Icons.settings_outlined,
-                        color: _tabController.index == 3 ? Colors.black87 : Colors.grey.shade500,
+                        color: _showSettings ? Colors.black87 : Colors.grey.shade500,
                         size: 24.w,
                       ),
                     ),
@@ -108,16 +116,17 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
             ),
             // Tab Views
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                physics: const NeverScrollableScrollPhysics(), // Prevent swipe to change tabs
-                children: const [
-                  CounterTab(),
-                  OrderFormTab(),
-                  OrderHistoryTab(),
-                  SettingsTab(),
-                ],
-              ),
+              child: _showSettings 
+                  ? const SettingsTab()
+                  : TabBarView(
+                      controller: _tabController,
+                      physics: const NeverScrollableScrollPhysics(), // Prevent swipe to change tabs
+                      children: const [
+                        CounterTab(),
+                        OrderFormTab(),
+                        OrderHistoryTab(),
+                      ],
+                    ),
             ),
           ],
         ),

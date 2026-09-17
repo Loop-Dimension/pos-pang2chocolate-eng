@@ -1,13 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../providers/cart_provider.dart';
 import '../screens/qr_scan_screen.dart';
 
-class CheckoutCartSheet extends StatelessWidget {
+class CheckoutCartSheet extends ConsumerWidget {
   const CheckoutCartSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartItems = ref.watch(cartProvider);
+    final totalItems = ref.watch(cartItemCountProvider);
+    final totalAmount = ref.watch(cartTotalProvider);
+    
+    // Fetch merchant discount rate dynamically
+    final merchantData = ref.watch(merchantDataProvider).value;
+    double discountPercentage = 0.03; // Default 3% fallback
+    if (merchantData != null && merchantData['discountRate'] != null) {
+      final rateStr = merchantData['discountRate'] as String;
+      // "3% ~", "4% ~", "10% ~" -> parse int
+      final parsedStr = rateStr.replaceAll(RegExp(r'[^0-9]'), '');
+      if (parsedStr.isNotEmpty) {
+        discountPercentage = int.parse(parsedStr) / 100.0;
+      }
+    }
+    
+    final discountAmount = (totalAmount * discountPercentage).round();
+    final finalMembershipAmount = totalAmount - discountAmount;
+    final formatter = NumberFormat('#,###');
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.9, // Almost full screen
       decoration: BoxDecoration(
@@ -31,14 +55,18 @@ class CheckoutCartSheet extends StatelessWidget {
           
           // Cart Items List
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              children: [
-                _buildCartItem('에어로스팅 콜드브루 ICE', '4,000원', 1),
-                _buildCartItem('얼그레이 아이스티 ICE', '13,500원', 3),
-                _buildCartItem('딥 다크초콜릿 라떼', '13,000원', 2),
-              ],
-            ),
+            child: cartItems.isEmpty
+                ? Center(
+                    child: Text('장바구니가 비어 있습니다.', style: TextStyle(fontSize: 16.sp, color: Colors.grey)),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    itemCount: cartItems.length,
+                    itemBuilder: (context, index) {
+                      final item = cartItems[index];
+                      return _buildCartItem(ref, item.productId, item.name, item.price, item.quantity);
+                    },
+                  ),
           ),
           
           // Bottom Payment Summary
@@ -66,7 +94,7 @@ class CheckoutCartSheet extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Text(
-                        '6',
+                        '$totalItems',
                         style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -79,7 +107,7 @@ class CheckoutCartSheet extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('일반회원', style: TextStyle(fontSize: 16.sp, color: Colors.grey.shade600)),
-                    Text('30,500원', style: TextStyle(fontSize: 16.sp, color: Colors.grey.shade600)),
+                    Text('${formatter.format(totalAmount)}원', style: TextStyle(fontSize: 16.sp, color: Colors.grey.shade600)),
                   ],
                 ),
                 SizedBox(height: 12.h),
@@ -95,25 +123,27 @@ class CheckoutCartSheet extends StatelessWidget {
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(12.r),
                           ),
-                          child: Text('3% 할인', style: TextStyle(color: Colors.white, fontSize: 10.sp)),
+                          child: Text('${(discountPercentage * 100).toInt()}% 할인', style: TextStyle(color: Colors.white, fontSize: 10.sp)),
                         ),
                       ],
                     ),
-                    Text('29,585원', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+                    Text('${formatter.format(finalMembershipAmount)}원', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 SizedBox(height: 24.h),
                 SizedBox(
                   height: 56.h,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (c) => const QrScanScreen()));
-                    },
+                    onPressed: totalItems == 0
+                        ? null
+                        : () {
+                            Navigator.push(context, MaterialPageRoute(builder: (c) => const QrScanScreen()));
+                          },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                      backgroundColor: totalItems == 0 ? Colors.grey.shade400 : Colors.black,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
                     ),
-                    child: Text('결제하기', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: Text('결제하기', style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -124,7 +154,9 @@ class CheckoutCartSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildCartItem(String name, String price, int quantity) {
+  Widget _buildCartItem(WidgetRef ref, int id, String name, int price, int quantity) {
+    final formatter = NumberFormat('#,###');
+    
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       child: Row(
@@ -148,7 +180,7 @@ class CheckoutCartSheet extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(price, style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700)),
+                    Text('${formatter.format(price)}원', style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700)),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
@@ -157,14 +189,20 @@ class CheckoutCartSheet extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                            child: Icon(Icons.remove, size: 16.w),
+                          GestureDetector(
+                            onTap: () => ref.read(cartProvider.notifier).updateQuantity(id, quantity - 1),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                              child: Icon(Icons.remove, size: 16.w),
+                            ),
                           ),
                           Text('$quantity', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                            child: Icon(Icons.add, size: 16.w),
+                          GestureDetector(
+                            onTap: () => ref.read(cartProvider.notifier).updateQuantity(id, quantity + 1),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                              child: Icon(Icons.add, size: 16.w),
+                            ),
                           ),
                         ],
                       ),
