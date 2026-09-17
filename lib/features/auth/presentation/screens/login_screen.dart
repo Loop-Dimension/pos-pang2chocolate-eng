@@ -15,11 +15,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       await ref.read(authRepositoryProvider).signInWithEmailAndPassword(
@@ -72,27 +76,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 padding: EdgeInsets.all(20.w),
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      labelText: 'Email',
-                      controller: _emailController,
-                      hintText: 'Enter your Pangyi account email',
-                    ),
-                    SizedBox(height: 16.h),
-                    CustomTextField(
-                      labelText: 'Password',
-                      controller: _passwordController,
-                      obscureText: true,
-                      hintText: 'Enter your password',
-                    ),
-                    SizedBox(height: 24.h),
-                    PrimaryButton(
-                      text: 'Login with Pangyi Chocolate Account',
-                      isLoading: _isLoading,
-                      onPressed: _handleLogin,
-                    ),
-                  ],
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      CustomTextField(
+                        labelText: 'Email',
+                        controller: _emailController,
+                        hintText: 'Enter your Pangyi account email',
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return '이메일을 입력해 주세요.';
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val)) {
+                            return '올바른 이메일 형식을 입력해 주세요.';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 16.h),
+                      CustomTextField(
+                        labelText: 'Password',
+                        controller: _passwordController,
+                        isPassword: true,
+                        hintText: 'Enter your password',
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return '비밀번호를 입력해 주세요.';
+                          return null; // Login usually just checks empty
+                        },
+                      ),
+                      SizedBox(height: 24.h),
+                      PrimaryButton(
+                        text: 'Login with Pangyi Chocolate Account',
+                        isLoading: _isLoading,
+                        onPressed: _handleLogin,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               

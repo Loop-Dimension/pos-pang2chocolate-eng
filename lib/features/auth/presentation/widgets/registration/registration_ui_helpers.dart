@@ -23,19 +23,34 @@ class RegistrationSectionTitle extends StatelessWidget {
   }
 }
 
-class RegistrationInputBox extends StatelessWidget {
+class RegistrationInputBox extends StatefulWidget {
   final String hint;
   final TextEditingController controller;
   final Widget? suffix;
-  final bool obscureText;
+  final bool isPassword;
+  final String? Function(String?)? validator;
 
   const RegistrationInputBox({
     super.key,
     required this.hint,
     required this.controller,
     this.suffix,
-    this.obscureText = false,
+    this.isPassword = false,
+    this.validator,
   });
+
+  @override
+  State<RegistrationInputBox> createState() => _RegistrationInputBoxState();
+}
+
+class _RegistrationInputBoxState extends State<RegistrationInputBox> {
+  bool _obscureText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = widget.isPassword;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,10 +64,11 @@ class RegistrationInputBox extends StatelessWidget {
         children: [
           Expanded(
             child: TextFormField(
-              controller: controller,
-              obscureText: obscureText,
+              controller: widget.controller,
+              obscureText: _obscureText,
+              validator: widget.validator,
               decoration: InputDecoration(
-                hintText: hint,
+                hintText: widget.hint,
                 hintStyle: TextStyle(
                   color: Colors.grey.shade400,
                   fontSize: 13.sp,
@@ -62,10 +78,23 @@ class RegistrationInputBox extends StatelessWidget {
                   horizontal: 16.w,
                   vertical: 14.h,
                 ),
+                suffixIcon: widget.isPassword
+                    ? IconButton(
+                        icon: Icon(
+                          _obscureText ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureText = !_obscureText;
+                          });
+                        },
+                      )
+                    : null,
               ),
             ),
           ),
-          if (suffix != null) suffix!,
+          if (widget.suffix != null) widget.suffix!,
         ],
       ),
     );
