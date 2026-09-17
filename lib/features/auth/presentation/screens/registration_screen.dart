@@ -46,12 +46,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   // Terms & Password
   final _passwordController = TextEditingController();
-  bool _agreedToTerms = false;
+  bool _agreedToContract = false;
+  bool _agreedToPrivacy = false;
 
   bool _isLoading = false;
 
   Future<void> _handleRegister() async {
-    if (!_agreedToTerms) {
+    if (!_agreedToContract || !_agreedToPrivacy) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please agree to the Terms and Conditions'),
@@ -152,8 +153,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
               SizedBox(height: 24.h),
               RegistrationTermsSection(
-                agreedToTerms: _agreedToTerms,
-                onChanged: (val) => setState(() => _agreedToTerms = val),
+                agreedToContract: _agreedToContract,
+                agreedToPrivacy: _agreedToPrivacy,
+                onContractChanged: (val) => setState(() => _agreedToContract = val),
+                onPrivacyChanged: (val) => setState(() => _agreedToPrivacy = val),
               ),
               SizedBox(height: 32.h),
 

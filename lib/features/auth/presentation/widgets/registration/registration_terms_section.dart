@@ -3,13 +3,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RegistrationTermsSection extends StatelessWidget {
-  final bool agreedToTerms;
-  final ValueChanged<bool> onChanged;
+  final bool agreedToContract;
+  final bool agreedToPrivacy;
+  final ValueChanged<bool> onContractChanged;
+  final ValueChanged<bool> onPrivacyChanged;
 
   const RegistrationTermsSection({
     super.key,
-    required this.agreedToTerms,
-    required this.onChanged,
+    required this.agreedToContract,
+    required this.agreedToPrivacy,
+    required this.onContractChanged,
+    required this.onPrivacyChanged,
   });
 
   @override
@@ -19,8 +23,8 @@ class RegistrationTermsSection extends StatelessWidget {
         Row(
           children: [
             Checkbox(
-              value: agreedToTerms,
-              onChanged: (v) => onChanged(v ?? false),
+              value: agreedToContract,
+              onChanged: (v) => onContractChanged(v ?? false),
               activeColor: Colors.black,
             ),
             Expanded(
@@ -34,8 +38,8 @@ class RegistrationTermsSection extends StatelessWidget {
         Row(
           children: [
             Checkbox(
-              value: agreedToTerms,
-              onChanged: (v) => onChanged(v ?? false),
+              value: agreedToPrivacy,
+              onChanged: (v) => onPrivacyChanged(v ?? false),
               activeColor: Colors.black,
             ),
             Expanded(
@@ -49,16 +53,18 @@ class RegistrationTermsSection extends StatelessWidget {
                 final url = Uri.parse(
                   'https://magnetic-sole-873.notion.site/397afcb4acdd8099ad05dccac36185c2?pvs=74',
                 );
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.inAppWebView);
-                }
+                // Directly launch without checking canLaunchUrl to avoid Android 11+ queries issue
+                await launchUrl(url);
               },
-              child: Text(
-                '전문 보기',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: Colors.black87,
-                  decoration: TextDecoration.underline,
+              child: Padding(
+                padding: EdgeInsets.only(left: 8.w),
+                child: Text(
+                  '전문 보기',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.black87,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ),
