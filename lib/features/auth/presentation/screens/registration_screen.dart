@@ -95,6 +95,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             'storePhone': _storePhoneController.text.trim(),
             'businessHours': _businessHours,
             'howDidYouHear': _howDidYouHearController.text.trim(),
+            // TODO: Upload _profileImage to Firebase Storage and get real URL
+            'profileImageUrl': _profileImage != null ? 'https://mock-storage.com/image.png' : null,
           },
         );
       }
@@ -129,7 +131,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       child: IconButton(
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: Colors.black,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
