@@ -11,6 +11,7 @@ import '../widgets/registration/registration_info_section.dart';
 import '../widgets/registration/registration_location_discount_section.dart';
 import '../widgets/registration/registration_business_auth_section.dart';
 import '../widgets/registration/registration_store_info_section.dart';
+import '../widgets/registration/registration_terms_section.dart';
 
 class RegistrationScreen extends ConsumerStatefulWidget {
   const RegistrationScreen({super.key});
@@ -121,9 +122,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 40.h),
-              
+
               const RegistrationInfoSection(),
-              
+
               RegistrationLocationDiscountSection(
                 storeLinkController: _storeLinkController,
                 exclusionItemsController: _exclusionItemsController,
@@ -150,26 +151,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               ),
 
               SizedBox(height: 24.h),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreedToTerms,
-                    onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                    activeColor: Colors.black,
-                  ),
-                  Text('위 계약 내용에 동의합니다.', style: TextStyle(fontSize: 12.sp, color: Colors.black87)),
-                ],
+              RegistrationTermsSection(
+                agreedToTerms: _agreedToTerms,
+                onChanged: (val) => setState(() => _agreedToTerms = val),
               ),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreedToTerms,
-                    onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                    activeColor: Colors.black,
-                  ),
-                  Text('팽이 포스 이용약관 및 개인정보수집에 동의합니다.', style: TextStyle(fontSize: 12.sp, color: Colors.black87)),
-                ],
-              ),
+              SizedBox(height: 32.h),
 
               RegistrationStoreInfoSection(
                 profileImage: _profileImage,
@@ -209,8 +195,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       ),
     );
   }
-
-
 
   @override
   void dispose() {
