@@ -100,35 +100,38 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
                       child: Text(day, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
                     ),
                     Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('오픈', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
-                          SizedBox(width: 8.w),
-                          _buildTimeDropdown(openHour[day]!, true, (val) {
-                            setState(() => openHour[day] = val!);
-                            _notifyChanges();
-                          }),
-                          const Text(' : '),
-                          _buildTimeDropdown(openMin[day]!, false, (val) {
-                            setState(() => openMin[day] = val!);
-                            _notifyChanges();
-                          }),
-                          SizedBox(width: 8.w),
-                          Text('-', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
-                          SizedBox(width: 8.w),
-                          Text('마감', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
-                          SizedBox(width: 8.w),
-                          _buildTimeDropdown(closeHour[day]!, true, (val) {
-                            setState(() => closeHour[day] = val!);
-                            _notifyChanges();
-                          }),
-                          const Text(' : '),
-                          _buildTimeDropdown(closeMin[day]!, false, (val) {
-                            setState(() => closeMin[day] = val!);
-                            _notifyChanges();
-                          }),
-                        ],
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('오픈', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                            SizedBox(width: 4.w),
+                            _buildTimeDropdown(openHour[day]!, true, (val) {
+                              setState(() => openHour[day] = val!);
+                              _notifyChanges();
+                            }),
+                            Text(':', style: TextStyle(fontSize: 12.sp)),
+                            _buildTimeDropdown(openMin[day]!, false, (val) {
+                              setState(() => openMin[day] = val!);
+                              _notifyChanges();
+                            }),
+                            SizedBox(width: 4.w),
+                            Text('-', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                            SizedBox(width: 4.w),
+                            Text('마감', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                            SizedBox(width: 4.w),
+                            _buildTimeDropdown(closeHour[day]!, true, (val) {
+                              setState(() => closeHour[day] = val!);
+                              _notifyChanges();
+                            }),
+                            Text(':', style: TextStyle(fontSize: 12.sp)),
+                            _buildTimeDropdown(closeMin[day]!, false, (val) {
+                              setState(() => closeMin[day] = val!);
+                              _notifyChanges();
+                            }),
+                          ],
+                        ),
                       ),
                     ),
                     _buildClosedButton(day, closed),
@@ -176,7 +179,7 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
 
     return Container(
       height: 30.h,
-      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(4.r),
@@ -185,8 +188,8 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
       child: DropdownButton<String>(
         value: currentValue,
         underline: const SizedBox(),
-        icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-        style: TextStyle(fontSize: 12.sp, color: Colors.black),
+        icon: const Icon(Icons.keyboard_arrow_down, size: 14),
+        style: TextStyle(fontSize: 11.sp, color: Colors.black),
         items: items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
         onChanged: onChanged,
       ),
