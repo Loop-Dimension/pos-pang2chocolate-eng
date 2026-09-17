@@ -21,31 +21,48 @@ class RegistrationTermsSection extends StatelessWidget {
     return Column(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Checkbox(
-              value: agreedToContract,
-              onChanged: (v) => onContractChanged(v ?? false),
-              activeColor: Colors.black,
+            SizedBox(
+              width: 24.w,
+              height: 24.w,
+              child: Checkbox(
+                value: agreedToContract,
+                onChanged: (v) => onContractChanged(v ?? false),
+                activeColor: Colors.black,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                side: BorderSide(color: Colors.black54, width: 1.5),
+              ),
             ),
+            SizedBox(width: 8.w),
             Expanded(
               child: Text(
                 '위 계약 내용에 동의합니다.',
-                style: TextStyle(fontSize: 12.sp, color: Colors.black87),
+                style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500),
               ),
             ),
           ],
         ),
+        SizedBox(height: 12.h),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Checkbox(
-              value: agreedToPrivacy,
-              onChanged: (v) => onPrivacyChanged(v ?? false),
-              activeColor: Colors.black,
+            SizedBox(
+              width: 24.w,
+              height: 24.w,
+              child: Checkbox(
+                value: agreedToPrivacy,
+                onChanged: (v) => onPrivacyChanged(v ?? false),
+                activeColor: Colors.black,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                side: BorderSide(color: Colors.black54, width: 1.5),
+              ),
             ),
+            SizedBox(width: 8.w),
             Expanded(
               child: Text(
                 '팽이 포스 이용약관 및 개인정보수집에 동의합니다.',
-                style: TextStyle(fontSize: 12.sp, color: Colors.black87),
+                style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500),
               ),
             ),
             GestureDetector(
@@ -62,9 +79,10 @@ class RegistrationTermsSection extends StatelessWidget {
                 child: Text(
                   '전문 보기',
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 13.sp,
                     color: Colors.black87,
                     decoration: TextDecoration.underline,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
