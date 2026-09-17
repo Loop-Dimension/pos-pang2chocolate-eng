@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../data/auth_repository.dart';
+import '../widgets/forgot_password_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -108,6 +109,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         text: '로그인',
                         isLoading: _isLoading,
                         onPressed: _handleLogin,
+                      ),
+                      SizedBox(height: 16.h),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => showForgotPasswordDialog(context),
+                          child: Text(
+                            '비밀번호 찾기',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp),
+                          ),
+                        ),
                       ),
                     ],
                   ),
