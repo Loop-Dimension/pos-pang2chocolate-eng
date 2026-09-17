@@ -60,31 +60,34 @@ class RegistrationTermsSection extends StatelessWidget {
             ),
             SizedBox(width: 8.w),
             Expanded(
-              child: Text(
-                '팽이 포스 이용약관 및 개인정보수집에 동의합니다.',
-                style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500),
-              ),
-            ),
-            GestureDetector(
-              onTap: () async {
-                final url = Uri.parse(
-                  'https://magnetic-sole-873.notion.site/397afcb4acdd8099ad05dccac36185c2?pvs=74',
-                );
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url);
-                }
-              },
-              child: Padding(
-                padding: EdgeInsets.only(left: 8.w),
-                child: Text(
-                  '전문 보기',
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    color: Colors.black87,
-                    decoration: TextDecoration.underline,
-                    fontWeight: FontWeight.bold,
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    '팽이 포스 이용약관 및 개인정보수집에 동의합니다.',
+                    style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500),
                   ),
-                ),
+                  SizedBox(width: 4.w),
+                  GestureDetector(
+                    onTap: () async {
+                      final url = Uri.parse(
+                        'https://magnetic-sole-873.notion.site/397afcb4acdd8099ad05dccac36185c2?pvs=74',
+                      );
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
+                      }
+                    },
+                    child: Text(
+                      '전문 보기',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.black87,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
