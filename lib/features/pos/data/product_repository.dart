@@ -1,5 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../../../core/helpers/image_upload_helper.dart';
+import '../../auth/data/merchant_repository.dart';
 
 class PosProduct {
   final String id;
@@ -64,10 +69,15 @@ class PosProduct {
 
 class ProductRepository {
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
 
-  ProductRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  ProductRepository({FirebaseFirestore? firestore, FirebaseStorage? storage}) 
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance;
 
   CollectionReference<Map<String, dynamic>> get _products => _firestore.collection('merchant_products');
+
+  String getNewProductId() => _products.doc().id;
 
   Stream<List<PosProduct>> streamProducts(String merchantId, String categoryId) {
     return _products
@@ -82,7 +92,7 @@ class ProductRepository {
   }
 
   Future<void> createProduct(PosProduct product) async {
-    final docRef = _products.doc();
+    final docRef = product.id.isEmpty ? _products.doc() : _products.doc(product.id);
     await docRef.set({
       'merchantId': product.merchantId,
       'categoryId': product.categoryId,
@@ -142,8 +152,37 @@ class ProductRepository {
       gridIndex: data['gridIndex'] ?? 0,
     );
   }
+
+  Future<String> uploadProductImage(XFile image, String merchantId, String productId) async {
+    final originalBytes = await image.readAsBytes();
+    final preparedData = await ImageUploadHelper.prepareImageForUpload(
+      rawBytes: originalBytes,
+      originalName: image.name,
+      minWidth: 400,
+      minHeight: 400,
+      quality: 80,
+    );
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final storageRef = _storage
+        .ref()
+        .child('merchant_products')
+        .child(merchantId)
+        .child(productId)
+        .child('img_$timestamp${preparedData.extension}');
+        
+    final uploadTask = await storageRef.putData(
+      preparedData.bytes,
+      SettableMetadata(contentType: preparedData.contentType),
+    );
+    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    return downloadUrl;
+  }
 }
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
-  return ProductRepository();
+  return ProductRepository(
+    firestore: ref.watch(firebaseFirestoreProvider),
+    storage: ref.watch(firebaseStorageProvider),
+  );
 });

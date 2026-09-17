@@ -6,6 +6,7 @@ class CartItem {
   final int price;
   final int quantity;
   final bool showOnKitchenOrderForm;
+  final String? imageUrl;
 
   CartItem({
     required this.productId,
@@ -13,15 +14,17 @@ class CartItem {
     required this.price,
     this.quantity = 1,
     this.showOnKitchenOrderForm = true,
+    this.imageUrl,
   });
 
-  CartItem copyWith({int? quantity, bool? showOnKitchenOrderForm}) {
+  CartItem copyWith({int? quantity, bool? showOnKitchenOrderForm, String? imageUrl}) {
     return CartItem(
       productId: productId,
       name: name,
       price: price,
       quantity: quantity ?? this.quantity,
       showOnKitchenOrderForm: showOnKitchenOrderForm ?? this.showOnKitchenOrderForm,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }
@@ -32,7 +35,7 @@ class CartNotifier extends Notifier<List<CartItem>> {
     return [];
   }
 
-  void addItem(String productId, String name, int price, {bool showOnKitchenOrderForm = true}) {
+  void addItem(String productId, String name, int price, {bool showOnKitchenOrderForm = true, String? imageUrl}) {
     final existingIndex = state.indexWhere((item) => item.productId == productId);
     if (existingIndex >= 0) {
       final updatedList = [...state];
@@ -41,7 +44,7 @@ class CartNotifier extends Notifier<List<CartItem>> {
       );
       state = updatedList;
     } else {
-      state = [...state, CartItem(productId: productId, name: name, price: price, showOnKitchenOrderForm: showOnKitchenOrderForm)];
+      state = [...state, CartItem(productId: productId, name: name, price: price, showOnKitchenOrderForm: showOnKitchenOrderForm, imageUrl: imageUrl)];
     }
   }
 

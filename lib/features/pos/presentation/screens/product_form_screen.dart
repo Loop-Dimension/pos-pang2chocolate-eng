@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/product_repository.dart';
@@ -27,6 +28,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   bool _isUnlimitedStock = false;
   bool _showOnKitchen = true;
   bool _showInSelfOrder = true;
+
+  List<String> _existingImages = [];
+  String? _draftProductId;
+  bool _isUploadingImage = false;
   
   PosProduct? _editingProduct;
   bool _isLoading = true;
@@ -69,10 +74,44 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           } else {
             _stockController.text = product.stockCount.toString();
           }
+          _existingImages = List.from(product.imageUrls);
         }
       }
     }
     setState(() => _isLoading = false);
+  }
+
+  Future<void> _pickImage() async {
+    if (_existingImages.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('최대 5개의 이미지만 등록 가능합니다.')));
+      return;
+    }
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() => _isUploadingImage = true);
+        final user = ref.read(authStateProvider).value;
+        if (user != null) {
+          final repo = ref.read(productRepositoryProvider);
+          final prodId = _editingProduct?.id ?? _draftProductId ?? repo.getNewProductId();
+          if (_editingProduct == null && _draftProductId == null) {
+             _draftProductId = prodId;
+          }
+          final url = await repo.uploadProductImage(image, user.uid, prodId);
+          setState(() {
+            _existingImages.add(url);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('이미지 업로드 실패: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
   }
 
   void _saveProduct() async {
@@ -98,45 +137,58 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
     final repo = ref.read(productRepositoryProvider);
 
-    if (_editingProduct == null) {
-      // Find max grid index for this category
-      final existingProducts = await repo.streamProducts(user.uid, _selectedCategoryId!).first;
-      final maxGrid = existingProducts.isEmpty ? 0 : existingProducts.map((p) => p.gridIndex).reduce((a, b) => a > b ? a : b);
+    setState(() => _isLoading = true);
+    try {
+      String prodId = _editingProduct?.id ?? _draftProductId ?? repo.getNewProductId();
+      List<String> finalImageUrls = List.from(_existingImages);
       
-      final newProduct = PosProduct(
-        id: '',
-        merchantId: user.uid,
-        categoryId: _selectedCategoryId!,
-        name: _nameController.text.trim(),
-        price: price,
-        description: _descController.text.trim(),
-        memo: _memoController.text.trim(),
-        stockCount: stockCount,
-        showOnKitchenOrderForm: _showOnKitchen,
-        showInSelfOrder: _showInSelfOrder,
-        imageUrls: [],
-        gridIndex: maxGrid + 1,
-      );
-      
-      await repo.createProduct(newProduct);
-    } else {
-      // Update
-      final updatedProduct = _editingProduct!.copyWith(
-        categoryId: _selectedCategoryId,
-        name: _nameController.text.trim(),
-        price: price,
-        description: _descController.text.trim(),
-        memo: _memoController.text.trim(),
-        stockCount: stockCount,
-        clearStockCount: _isUnlimitedStock,
-        showOnKitchenOrderForm: _showOnKitchen,
-        showInSelfOrder: _showInSelfOrder,
-      );
-      await repo.updateProduct(updatedProduct);
-    }
+      if (_editingProduct == null) {
+        // Find max grid index for this category
+        final existingProducts = await repo.streamProducts(user.uid, _selectedCategoryId!).first;
+        final maxGrid = existingProducts.isEmpty ? 0 : existingProducts.map((p) => p.gridIndex).reduce((a, b) => a > b ? a : b);
+        
+        final newProduct = PosProduct(
+          id: prodId,
+          merchantId: user.uid,
+          categoryId: _selectedCategoryId!,
+          name: _nameController.text.trim(),
+          price: price,
+          description: _descController.text.trim(),
+          memo: _memoController.text.trim(),
+          stockCount: stockCount,
+          showOnKitchenOrderForm: _showOnKitchen,
+          showInSelfOrder: _showInSelfOrder,
+          imageUrls: finalImageUrls,
+          gridIndex: maxGrid + 1,
+        );
+        
+        await repo.createProduct(newProduct);
+      } else {
+        // Update
+        final updatedProduct = _editingProduct!.copyWith(
+          categoryId: _selectedCategoryId,
+          name: _nameController.text.trim(),
+          price: price,
+          description: _descController.text.trim(),
+          memo: _memoController.text.trim(),
+          stockCount: stockCount,
+          clearStockCount: _isUnlimitedStock,
+          showOnKitchenOrderForm: _showOnKitchen,
+          showInSelfOrder: _showInSelfOrder,
+          imageUrls: finalImageUrls,
+        );
+        await repo.updateProduct(updatedProduct);
+      }
 
-    if (mounted) {
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -215,6 +267,39 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildImageThumb({required String url, required VoidCallback onRemove}) {
+    return Container(
+      width: 56.w,
+      height: 56.w,
+      margin: EdgeInsets.only(right: 12.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8.r),
+            child: Image.network(url, fit: BoxFit.cover),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                child: const Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -313,26 +398,45 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             _buildTogglePair('셀프 주문 노출', _showInSelfOrder, (val) => setState(() => _showInSelfOrder = val)),
 
             _buildSectionTitle('상품 사진'),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(5, (index) {
-                return Container(
-                  width: 56.w,
-                  height: 56.w,
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: Colors.black, width: 2),
-                  ),
-                  child: Icon(Icons.image_outlined, size: 32.w),
-                );
-              }),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  // Add button or Loading Indicator
+                  if (_existingImages.length < 5)
+                    GestureDetector(
+                      onTap: _isUploadingImage ? null : _pickImage,
+                      child: Container(
+                        width: 56.w,
+                        height: 56.w,
+                        margin: EdgeInsets.only(right: 12.w),
+                        decoration: BoxDecoration(
+                          color: _isUploadingImage ? Colors.grey.shade200 : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: Colors.black, width: 2),
+                        ),
+                        child: _isUploadingImage 
+                          ? Center(child: SizedBox(width: 20.w, height: 20.w, child: const CircularProgressIndicator(strokeWidth: 2))) 
+                          : Icon(Icons.add_photo_alternate_outlined, size: 32.w),
+                      ),
+                    ),
+                  // Existing images
+                  ..._existingImages.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final url = entry.value;
+                    return _buildImageThumb(
+                      url: url,
+                      onRemove: _isUploadingImage ? () {} : () => setState(() => _existingImages.removeAt(index)),
+                    );
+                  }),
+                ],
+              ),
             ),
             Padding(
               padding: EdgeInsets.only(top: 8.h, bottom: 32.h),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('1개 ~ 5개', style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
+                child: Text('1개 ~ 5개 (업로드 완료 전까지 저장 불가)', style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
               ),
             ),
 
@@ -342,9 +446,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
+                  disabledBackgroundColor: Colors.grey.shade400,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
                 ),
-                onPressed: _saveProduct,
+                onPressed: _isUploadingImage ? null : _saveProduct,
                 child: Text(
                   widget.productId == null ? '추가하기' : '수정하기',
                   style: TextStyle(fontSize: 16.sp, color: Colors.white, fontWeight: FontWeight.bold),

@@ -245,7 +245,8 @@ class _ProductGridTab extends ConsumerWidget {
                   product.id, 
                   product.name, 
                   product.price, 
-                  showOnKitchenOrderForm: product.showOnKitchenOrderForm
+                  showOnKitchenOrderForm: product.showOnKitchenOrderForm,
+                  imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : null,
                 );
               },
               child: Container(

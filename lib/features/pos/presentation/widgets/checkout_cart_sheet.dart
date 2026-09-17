@@ -82,6 +82,7 @@ class CheckoutCartSheet extends ConsumerWidget {
                         item.name,
                         item.price,
                         item.quantity,
+                        item.imageUrl,
                       );
                     },
                   ),
@@ -241,6 +242,7 @@ class CheckoutCartSheet extends ConsumerWidget {
     String name,
     int price,
     int quantity,
+    String? imageUrl,
   ) {
     final formatter = NumberFormat('#,###');
 
@@ -253,8 +255,14 @@ class CheckoutCartSheet extends ConsumerWidget {
             width: 70.w,
             height: 70.w,
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: imageUrl == null ? Colors.black : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(8.r),
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
           ),
           SizedBox(width: 16.w),
