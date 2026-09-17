@@ -78,6 +78,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
+        String? profileImageUrl;
+        if (_profileImage != null) {
+          profileImageUrl = await ref.read(merchantRepositoryProvider).uploadProfileImage(_profileImage!, user.uid);
+        }
+
         await ref.read(merchantRepositoryProvider).createPendingMerchant(
           user.uid,
           {
@@ -95,8 +100,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             'storePhone': _storePhoneController.text.trim(),
             'businessHours': _businessHours,
             'howDidYouHear': _howDidYouHearController.text.trim(),
-            // TODO: Upload _profileImage to Firebase Storage and get real URL
-            'profileImageUrl': _profileImage != null ? 'https://mock-storage.com/image.png' : null,
+            'profileImageUrl': profileImageUrl,
           },
         );
       }
