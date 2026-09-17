@@ -8,6 +8,7 @@ import 'category_edit_screen.dart';
 import 'inventory_screen.dart';
 import 'product_management_screen.dart';
 import 'store_info_screen.dart';
+import 'block_type_setting_screen.dart';
 
 class PosDashboardScreen extends StatefulWidget {
   const PosDashboardScreen({super.key});
@@ -94,6 +95,9 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                         case 'store_info':
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreInfoScreen()));
                           break;
+                        case 'block_type_setting':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BlockTypeSettingScreen()));
+                          break;
                       }
                     },
                     offset: Offset(0, 50.h),
@@ -115,6 +119,10 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                       PopupMenuItem(
                         value: 'store_info',
                         child: Text('가게 정보', style: TextStyle(fontSize: 16.sp)),
+                      ),
+                      PopupMenuItem(
+                        value: 'block_type_setting',
+                        child: Text('블록타입 설정', style: TextStyle(fontSize: 16.sp)),
                       ),
                     ],
                     child: Container(

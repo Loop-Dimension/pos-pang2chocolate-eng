@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/category_repository.dart';
 import '../providers/cart_provider.dart';
 import '../providers/inventory_provider.dart';
@@ -151,6 +152,8 @@ class _ProductGridTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cartItems = ref.watch(cartProvider);
     final productsAsync = ref.watch(productsStreamProvider(categoryId));
+    final merchantData = ref.watch(merchantDataProvider).value;
+    final int gridColumns = merchantData?['posGridColumns'] ?? 4;
 
     return productsAsync.when(
       skipLoadingOnReload: true,
@@ -160,7 +163,7 @@ class _ProductGridTab extends ConsumerWidget {
         return GridView.builder(
           padding: EdgeInsets.only(left: 16.w, right: 16.w, top: 16.h, bottom: 100.h),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+            crossAxisCount: gridColumns,
             crossAxisSpacing: 8.w,
             mainAxisSpacing: 8.h,
             childAspectRatio: 1.0,
