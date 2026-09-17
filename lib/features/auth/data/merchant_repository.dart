@@ -27,7 +27,9 @@ class MerchantRepository {
   MerchantRepository(this._firestore, this._storage);
 
   Stream<String?> getMerchantStatus(String uid) {
-    return _firestore.collection('merchants').doc(uid).snapshots().map((snapshot) {
+    return _firestore.collection('merchants').doc(uid).snapshots().map((
+      snapshot,
+    ) {
       if (snapshot.exists) {
         return snapshot.data()?['status'] as String?;
       }
@@ -35,7 +37,10 @@ class MerchantRepository {
     });
   }
 
-  Future<void> createPendingMerchant(String uid, Map<String, dynamic> data) async {
+  Future<void> createPendingMerchant(
+    String uid,
+    Map<String, dynamic> data,
+  ) async {
     await _firestore.collection('merchants').doc(uid).set({
       ...data,
       'status': 'pending',
@@ -53,7 +58,10 @@ class MerchantRepository {
       quality: 80,
     );
 
-    final storageRef = _storage.ref().child('merchant_profiles').child('$uid${preparedData.extension}');
+    final storageRef = _storage
+        .ref()
+        .child('merchant_profiles')
+        .child('$uid${preparedData.extension}');
     final uploadTask = await storageRef.putData(
       preparedData.bytes,
       SettableMetadata(contentType: preparedData.contentType),
