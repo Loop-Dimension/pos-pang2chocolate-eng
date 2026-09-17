@@ -8,6 +8,7 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
   final TextEditingController addressController;
   final TextEditingController phoneController;
   final TextEditingController emailController;
+  final TextEditingController passwordController;
   final VoidCallback onVerifyBizReg;
   final VoidCallback onVerifyPhone;
 
@@ -19,6 +20,7 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
     required this.addressController,
     required this.phoneController,
     required this.emailController,
+    required this.passwordController,
     required this.onVerifyBizReg,
     required this.onVerifyPhone,
   });
@@ -43,6 +45,7 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
           suffix: RegistrationVerifyButton(text: '본인인증', onPressed: onVerifyPhone),
         ),
         RegistrationInputBox(hint: '이메일', controller: emailController),
+        RegistrationInputBox(hint: '비밀번호', controller: passwordController, obscureText: true),
       ],
     );
   }

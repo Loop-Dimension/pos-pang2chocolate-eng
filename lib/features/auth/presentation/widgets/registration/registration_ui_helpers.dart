@@ -27,12 +27,14 @@ class RegistrationInputBox extends StatelessWidget {
   final String hint;
   final TextEditingController controller;
   final Widget? suffix;
+  final bool obscureText;
 
   const RegistrationInputBox({
     super.key,
     required this.hint,
     required this.controller,
     this.suffix,
+    this.obscureText = false,
   });
 
   @override
@@ -48,6 +50,7 @@ class RegistrationInputBox extends StatelessWidget {
           Expanded(
             child: TextFormField(
               controller: controller,
+              obscureText: obscureText,
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: TextStyle(

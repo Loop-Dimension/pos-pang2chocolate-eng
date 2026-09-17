@@ -140,6 +140,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 addressController: _addressController,
                 phoneController: _phoneController,
                 emailController: _emailController,
+                passwordController: _passwordController,
                 onVerifyBizReg: () {},
                 onVerifyPhone: () {},
               ),
