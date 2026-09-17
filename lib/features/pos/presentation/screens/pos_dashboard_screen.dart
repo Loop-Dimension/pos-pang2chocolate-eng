@@ -54,7 +54,7 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                           borderRadius: BorderRadius.circular(22.r),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             )
@@ -89,7 +89,7 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                         boxShadow: _tabController.index == 3
                             ? [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 )
