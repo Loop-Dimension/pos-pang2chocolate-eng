@@ -155,8 +155,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               RegistrationTermsSection(
                 agreedToContract: _agreedToContract,
                 agreedToPrivacy: _agreedToPrivacy,
-                onContractChanged: (val) => setState(() => _agreedToContract = val),
-                onPrivacyChanged: (val) => setState(() => _agreedToPrivacy = val),
+                onContractChanged: (val) =>
+                    setState(() => _agreedToContract = val),
+                onPrivacyChanged: (val) =>
+                    setState(() => _agreedToPrivacy = val),
               ),
               SizedBox(height: 32.h),
 

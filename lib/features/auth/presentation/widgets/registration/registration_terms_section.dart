@@ -53,8 +53,9 @@ class RegistrationTermsSection extends StatelessWidget {
                 final url = Uri.parse(
                   'https://magnetic-sole-873.notion.site/397afcb4acdd8099ad05dccac36185c2?pvs=74',
                 );
-                // Directly launch without checking canLaunchUrl to avoid Android 11+ queries issue
-                await launchUrl(url);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
+                }
               },
               child: Padding(
                 padding: EdgeInsets.only(left: 8.w),
