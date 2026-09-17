@@ -81,9 +81,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     children: [
                       CustomTextField(
-                        labelText: 'Email',
+                        labelText: '이메일',
                         controller: _emailController,
-                        hintText: 'Enter your Pangyi account email',
+                        hintText: '이메일을 입력해 주세요',
                         validator: (val) {
                           if (val == null || val.isEmpty) return '이메일을 입력해 주세요.';
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val)) {
@@ -94,10 +94,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       SizedBox(height: 16.h),
                       CustomTextField(
-                        labelText: 'Password',
+                        labelText: '비밀번호',
                         controller: _passwordController,
                         isPassword: true,
-                        hintText: 'Enter your password',
+                        hintText: '비밀번호를 입력해 주세요',
                         validator: (val) {
                           if (val == null || val.isEmpty) return '비밀번호를 입력해 주세요.';
                           return null; // Login usually just checks empty
@@ -105,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       SizedBox(height: 24.h),
                       PrimaryButton(
-                        text: 'Login with Pangyi Chocolate Account',
+                        text: '로그인',
                         isLoading: _isLoading,
                         onPressed: _handleLogin,
                       ),
@@ -118,7 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextButton(
                 onPressed: () => context.push('/register'),
                 child: Text(
-                  'Not registered? Request POS Partnership',
+                  '아직 회원이 아니신가요? 제휴 신청하기',
                   style: TextStyle(
                     color: Colors.black54,
                     fontSize: 14.sp,

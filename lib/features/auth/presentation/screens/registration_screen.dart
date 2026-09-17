@@ -101,7 +101,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed: ${e.toString()}')),
+          SnackBar(content: Text('회원가입에 실패했습니다: ${e.toString()}')),
         );
       }
     } finally {
@@ -113,100 +113,111 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F0F0),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '팽이 POS 회원가입',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 40.h),
-
-              const RegistrationInfoSection(),
-
-              RegistrationLocationDiscountSection(
-                storeLinkController: _storeLinkController,
-                exclusionItemsController: _exclusionItemsController,
-                discountRate: _discountRate,
-                onDiscountChanged: (v) => setState(() => _discountRate = v!),
-              ),
-
-              RegistrationBusinessAuthSection(
-                bizRegNumController: _bizRegNumController,
-                companyNameController: _companyNameController,
-                repNameController: _repNameController,
-                addressController: _addressController,
-                phoneController: _phoneController,
-                emailController: _emailController,
-                passwordController: _passwordController,
-                onVerifyBizReg: () {},
-                onVerifyPhone: () {},
-              ),
-
-              const RegistrationSectionTitle(title: '정산계좌'),
-              RegistrationInputBox(
-                hint: '',
-                controller: _accountController,
-                suffix: RegistrationVerifyButton(text: '확인', onPressed: () {}),
-              ),
-
-              SizedBox(height: 24.h),
-              RegistrationTermsSection(
-                agreedToContract: _agreedToContract,
-                agreedToPrivacy: _agreedToPrivacy,
-                onContractChanged: (val) =>
-                    setState(() => _agreedToContract = val),
-                onPrivacyChanged: (val) =>
-                    setState(() => _agreedToPrivacy = val),
-              ),
-              SizedBox(height: 32.h),
-
-              RegistrationStoreInfoSection(
-                profileImage: _profileImage,
-                onImagePicked: (img) => setState(() => _profileImage = img),
-                storeNameController: _storeNameController,
-                storePhoneController: _storePhoneController,
-                howDidYouHearController: _howDidYouHearController,
-                onBusinessHoursChanged: (hours) => _businessHours = hours,
-              ),
-
-              SizedBox(height: 32.h),
-              InkWell(
-                onTap: _isLoading ? null : _handleRegister,
-                child: Container(
-                  height: 56.h,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(8.r),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '팽이 POS 회원가입',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          '제휴 신청하기',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              SizedBox(height: 40.h),
-            ],
+                SizedBox(height: 40.h),
+
+                const RegistrationInfoSection(),
+
+                RegistrationLocationDiscountSection(
+                  storeLinkController: _storeLinkController,
+                  exclusionItemsController: _exclusionItemsController,
+                  discountRate: _discountRate,
+                  onDiscountChanged: (v) => setState(() => _discountRate = v!),
+                ),
+
+                RegistrationBusinessAuthSection(
+                  bizRegNumController: _bizRegNumController,
+                  companyNameController: _companyNameController,
+                  repNameController: _repNameController,
+                  addressController: _addressController,
+                  phoneController: _phoneController,
+                  emailController: _emailController,
+                  passwordController: _passwordController,
+                  onVerifyBizReg: () {},
+                  onVerifyPhone: () {},
+                ),
+
+                const RegistrationSectionTitle(title: '정산계좌'),
+                RegistrationInputBox(
+                  hint: '',
+                  controller: _accountController,
+                  suffix: RegistrationVerifyButton(
+                    text: '확인',
+                    onPressed: () {},
+                  ),
+                ),
+
+                SizedBox(height: 24.h),
+                RegistrationTermsSection(
+                  agreedToContract: _agreedToContract,
+                  agreedToPrivacy: _agreedToPrivacy,
+                  onContractChanged: (val) =>
+                      setState(() => _agreedToContract = val),
+                  onPrivacyChanged: (val) =>
+                      setState(() => _agreedToPrivacy = val),
+                ),
+                SizedBox(height: 32.h),
+
+                RegistrationStoreInfoSection(
+                  profileImage: _profileImage,
+                  onImagePicked: (img) => setState(() => _profileImage = img),
+                  storeNameController: _storeNameController,
+                  storePhoneController: _storePhoneController,
+                  howDidYouHearController: _howDidYouHearController,
+                  onBusinessHoursChanged: (hours) => _businessHours = hours,
+                ),
+
+                SizedBox(height: 32.h),
+                InkWell(
+                  onTap: _isLoading ? null : _handleRegister,
+                  child: Container(
+                    height: 56.h,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            '제휴 신청하기',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                SizedBox(height: 40.h),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
