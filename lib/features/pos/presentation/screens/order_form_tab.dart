@@ -38,7 +38,7 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
           ),
           TextButton(
             onPressed: () {
-              ref.read(orderProvider.notifier).cancelOrder(orderId);
+              ref.read(orderRepositoryProvider).updateOrderStatus(orderId, OrderStatus.refunded);
               Navigator.pop(context);
               setState(() {
                 if (_expandedOrderId == orderId) _expandedOrderId = null;
@@ -53,33 +53,40 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
 
   @override
   Widget build(BuildContext context) {
-    final orders = ref.watch(orderProvider);
+    final pendingOrdersAsync = ref.watch(pendingOrdersStreamProvider);
     final pendingCount = ref.watch(pendingOrdersCountProvider);
     final dateFormatter = DateFormat('yyyy.MM.dd HH:mm');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 8.h),
-            child: Text(
-              '미완료 주문 : $pendingCount',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+      body: pendingOrdersAsync.when(
+        skipLoadingOnReload: true,
+        loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
+        error: (error, stack) => Center(child: Text('에러 발생: $error')),
+        data: (orders) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 8.h),
+                child: Text(
+                  '미완료 주문 : $pendingCount',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                final isExpanded = _expandedOrderId == order.id;
+              Expanded(
+                child: orders.isEmpty
+                    ? Center(child: Text('들어온 주문이 없습니다.', style: TextStyle(fontSize: 16.sp, color: Colors.grey)))
+                    : ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        itemCount: orders.length,
+                        itemBuilder: (context, index) {
+                          final order = orders[index];
+                          final isExpanded = _expandedOrderId == order.id;
 
                 return GestureDetector(
                   onTap: () {
@@ -148,7 +155,7 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
                               // Complete Button
                               GestureDetector(
                                 onTap: () {
-                                  ref.read(orderProvider.notifier).completeOrder(order.id);
+                                  ref.read(orderRepositoryProvider).updateOrderStatus(order.id, OrderStatus.completed);
                                 },
                                 child: Container(
                                   width: 60.w,
@@ -217,7 +224,8 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
             ),
           ),
         ],
-      ),
+      );
+    }),
     );
   }
 }

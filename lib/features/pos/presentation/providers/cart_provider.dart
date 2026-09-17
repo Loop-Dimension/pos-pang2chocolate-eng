@@ -1,24 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CartItem {
-  final int productId;
+  final String productId;
   final String name;
   final int price;
   final int quantity;
+  final bool showOnKitchenOrderForm;
 
   CartItem({
     required this.productId,
     required this.name,
     required this.price,
     this.quantity = 1,
+    this.showOnKitchenOrderForm = true,
   });
 
-  CartItem copyWith({int? quantity}) {
+  CartItem copyWith({int? quantity, bool? showOnKitchenOrderForm}) {
     return CartItem(
       productId: productId,
       name: name,
       price: price,
       quantity: quantity ?? this.quantity,
+      showOnKitchenOrderForm: showOnKitchenOrderForm ?? this.showOnKitchenOrderForm,
     );
   }
 }
@@ -29,7 +32,7 @@ class CartNotifier extends Notifier<List<CartItem>> {
     return [];
   }
 
-  void addItem(int productId, String name, int price) {
+  void addItem(String productId, String name, int price, {bool showOnKitchenOrderForm = true}) {
     final existingIndex = state.indexWhere((item) => item.productId == productId);
     if (existingIndex >= 0) {
       final updatedList = [...state];
@@ -38,11 +41,11 @@ class CartNotifier extends Notifier<List<CartItem>> {
       );
       state = updatedList;
     } else {
-      state = [...state, CartItem(productId: productId, name: name, price: price)];
+      state = [...state, CartItem(productId: productId, name: name, price: price, showOnKitchenOrderForm: showOnKitchenOrderForm)];
     }
   }
 
-  void updateQuantity(int productId, int quantity) {
+  void updateQuantity(String productId, int quantity) {
     if (quantity <= 0) {
       removeItem(productId);
       return;
@@ -53,7 +56,7 @@ class CartNotifier extends Notifier<List<CartItem>> {
     ];
   }
 
-  void removeItem(int productId) {
+  void removeItem(String productId) {
     state = state.where((item) => item.productId != productId).toList();
   }
 

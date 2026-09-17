@@ -4,7 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'counter_tab.dart';
 import 'order_form_tab.dart';
 import 'order_history_tab.dart';
-import 'settings_tab.dart';
+import 'category_edit_screen.dart';
+import 'inventory_screen.dart';
+import 'product_management_screen.dart';
 
 class PosDashboardScreen extends StatefulWidget {
   const PosDashboardScreen({super.key});
@@ -15,19 +17,11 @@ class PosDashboardScreen extends StatefulWidget {
 
 class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _showSettings = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging || _showSettings) {
-        if (_showSettings) {
-          setState(() => _showSettings = false);
-        }
-      }
-    });
   }
 
   @override
@@ -84,29 +78,55 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
                   ),
                   SizedBox(width: 8.w),
                   // Settings Icon Tab
-                  GestureDetector(
-                    onTap: () {
-                      setState(() => _showSettings = true);
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'inventory':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen()));
+                          break;
+                        case 'categories':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoryEditScreen()));
+                          break;
+                        case 'products':
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductManagementScreen()));
+                          break;
+                        case 'store_info':
+                          // Store info screen is not yet requested, show snackbar or do nothing
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('가게 정보는 준비 중입니다.')));
+                          break;
+                      }
                     },
+                    offset: Offset(0, 50.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                    color: Colors.white,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'inventory',
+                        child: Text('재고 관리', style: TextStyle(fontSize: 16.sp)),
+                      ),
+                      PopupMenuItem(
+                        value: 'categories',
+                        child: Text('카테고리 편집', style: TextStyle(fontSize: 16.sp)),
+                      ),
+                      PopupMenuItem(
+                        value: 'products',
+                        child: Text('상품 편집', style: TextStyle(fontSize: 16.sp)),
+                      ),
+                      PopupMenuItem(
+                        value: 'store_info',
+                        child: Text('가게 정보', style: TextStyle(fontSize: 16.sp)),
+                      ),
+                    ],
                     child: Container(
                       width: 44.h,
                       height: 44.h,
-                      decoration: BoxDecoration(
-                        color: _showSettings ? Colors.white : Colors.transparent,
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        boxShadow: _showSettings
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                )
-                              ]
-                            : null,
                       ),
                       child: Icon(
                         Icons.settings_outlined,
-                        color: _showSettings ? Colors.black87 : Colors.grey.shade500,
+                        color: Colors.grey.shade500,
                         size: 24.w,
                       ),
                     ),
@@ -116,17 +136,15 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
             ),
             // Tab Views
             Expanded(
-              child: _showSettings 
-                  ? const SettingsTab()
-                  : TabBarView(
-                      controller: _tabController,
-                      physics: const NeverScrollableScrollPhysics(), // Prevent swipe to change tabs
-                      children: const [
-                        CounterTab(),
-                        OrderFormTab(),
-                        OrderHistoryTab(),
-                      ],
-                    ),
+              child: TabBarView(
+                controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(), // Prevent swipe to change tabs
+                children: const [
+                  CounterTab(),
+                  OrderFormTab(),
+                  OrderHistoryTab(),
+                ],
+              ),
             ),
           ],
         ),

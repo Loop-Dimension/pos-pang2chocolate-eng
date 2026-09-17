@@ -81,7 +81,9 @@ class _RegistrationInputBoxState extends State<RegistrationInputBox> {
                 suffixIcon: widget.isPassword
                     ? IconButton(
                         icon: Icon(
-                          _obscureText ? Icons.visibility_off : Icons.visibility,
+                          _obscureText
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: Colors.grey,
                         ),
                         onPressed: () {

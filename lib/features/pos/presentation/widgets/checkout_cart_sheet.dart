@@ -202,7 +202,10 @@ class CheckoutCartSheet extends ConsumerWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (c) => const QrScanScreen(),
+                                builder: (c) => QrScanScreen(
+                                  finalPrice: finalMembershipAmount,
+                                  isMembership: true, // Mocking membership for now
+                                ),
                               ),
                             );
                           },
@@ -234,7 +237,7 @@ class CheckoutCartSheet extends ConsumerWidget {
 
   Widget _buildCartItem(
     WidgetRef ref,
-    int id,
+    String id,
     String name,
     int price,
     int quantity,

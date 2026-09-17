@@ -1,0 +1,20 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/category_repository.dart';
+import '../../data/product_repository.dart';
+
+final categoriesStreamProvider = StreamProvider<List<PosCategory>>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value([]);
+  
+  final repo = ref.watch(categoryRepositoryProvider);
+  return repo.streamCategories(user.uid);
+});
+
+final productsStreamProvider = StreamProvider.family<List<PosProduct>, String>((ref, categoryId) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null || categoryId.isEmpty) return Stream.value([]);
+  
+  final repo = ref.watch(productRepositoryProvider);
+  return repo.streamProducts(user.uid, categoryId);
+});

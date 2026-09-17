@@ -46,7 +46,7 @@ class _OrderHistoryTabState extends ConsumerState<OrderHistoryTab> {
           ),
           TextButton(
             onPressed: () {
-              ref.read(historyProvider.notifier).refundOrder(orderId);
+              ref.read(orderRepositoryProvider).updateOrderStatus(orderId, OrderStatus.refunded);
               Navigator.pop(context);
               setState(() {
                 if (_expandedOrderId == orderId) _expandedOrderId = null;
@@ -61,38 +61,42 @@ class _OrderHistoryTabState extends ConsumerState<OrderHistoryTab> {
 
   @override
   Widget build(BuildContext context) {
-    final historyOrders = ref.watch(historyProvider);
-    
-    // Filter orders based on search query
-    final filteredOrders = historyOrders.where((order) {
-      if (_searchQuery.isEmpty) return true;
-      final productString = order.items.map((item) => item.name).join(' ');
-      return order.customerName.toLowerCase().contains(_searchQuery) ||
-             order.contact.contains(_searchQuery) ||
-             order.customerEmail.toLowerCase().contains(_searchQuery) ||
-             productString.toLowerCase().contains(_searchQuery);
-    }).toList();
-
+    final historyAsync = ref.watch(historyOrdersStreamProvider);
     final completedCount = ref.watch(completedOrdersCountProvider);
     final dateFormatter = DateFormat('yyyy.MM.dd HH:mm');
     final currencyFormatter = NumberFormat('#,###');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 8.h),
-            child: Text(
-              '완료된 주문 : $completedCount',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+      body: historyAsync.when(
+        skipLoadingOnReload: true,
+        loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
+        error: (err, stack) => Center(child: Text('에러 발생: $err')),
+        data: (historyOrders) {
+          // Filter orders based on search query
+          final filteredOrders = historyOrders.where((order) {
+            if (_searchQuery.isEmpty) return true;
+            final productString = order.items.map((item) => item.name).join(' ');
+            return order.customerName.toLowerCase().contains(_searchQuery) ||
+                   order.contact.contains(_searchQuery) ||
+                   order.customerEmail.toLowerCase().contains(_searchQuery) ||
+                   productString.toLowerCase().contains(_searchQuery);
+          }).toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 8.h),
+                child: Text(
+                  '완료된 주문 : $completedCount',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
-          ),
           Expanded(
             child: filteredOrders.isEmpty
                 ? Center(
@@ -256,7 +260,8 @@ class _OrderHistoryTabState extends ConsumerState<OrderHistoryTab> {
             ),
           ),
         ],
-      ),
+      );
+    }),
     );
   }
 }

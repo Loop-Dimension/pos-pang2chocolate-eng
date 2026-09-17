@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/order_repository.dart';
 
 class OrderItem {
   final String name;
@@ -9,6 +11,7 @@ class OrderItem {
 }
 
 enum OrderStatus {
+  pending,
   completed,
   refunded,
 }
@@ -35,156 +38,32 @@ class PosOrder {
   });
 }
 
-class OrderNotifier extends Notifier<List<PosOrder>> {
-  @override
-  List<PosOrder> build() {
-    return _mockOrders();
-  }
+final orderRepositoryProvider = Provider<OrderRepository>((ref) {
+  return OrderRepository();
+});
 
-  List<PosOrder> _mockOrders() {
-    return [
-      PosOrder(
-        id: '1',
-        items: [
-          OrderItem(name: '에어로스팅 아메리카노 HOT', quantity: 4),
-          OrderItem(name: '아이스티', quantity: 1),
-          OrderItem(name: '딥 말차 라떼', quantity: 3),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 31),
-        customerName: '홍길동',
-        contact: '01027526381',
-        customerEmail: 'hong@naver.com',
-        totalAmount: 12500,
-      ),
-      PosOrder(
-        id: '2',
-        items: [
-          OrderItem(name: '에어로스팅 아메리카노 ICE', quantity: 3),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 35),
-        contact: '01011112222',
-        totalAmount: 12000,
-      ),
-      PosOrder(
-        id: '3',
-        items: [
-          OrderItem(name: '에어 크림 아메리카노 ICE', quantity: 3),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 40),
-        contact: '01033334444',
-        totalAmount: 13500,
-      ),
-      PosOrder(
-        id: '4',
-        items: [
-          OrderItem(name: '에어로스팅 아메리카노 HOT', quantity: 4),
-          OrderItem(name: '아이스티', quantity: 1),
-          OrderItem(name: '딥 말차 라떼', quantity: 3),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 45),
-        contact: '01055556666',
-        totalAmount: 35000,
-      ),
-      PosOrder(
-        id: '5',
-        items: [
-          OrderItem(name: '딥 다크 초콜릿 쉐이크', quantity: 1),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 50),
-        contact: '01077778888',
-        totalAmount: 6500,
-      ),
-      PosOrder(
-        id: '6',
-        items: [
-          OrderItem(name: '아메리카노 HOT', quantity: 2),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 55),
-        contact: '01099990000',
-        totalAmount: 8000,
-      ),
-    ];
-  }
+final pendingOrdersStreamProvider = StreamProvider<List<PosOrder>>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value([]);
+  
+  final repo = ref.watch(orderRepositoryProvider);
+  return repo.streamPendingOrders(user.uid);
+});
 
-  void completeOrder(String id) {
-    state = state.where((order) => order.id != id).toList();
-    // In the future: Add to order history
-  }
-
-  void cancelOrder(String id) {
-    state = state.where((order) => order.id != id).toList();
-  }
-}
-
-final orderProvider = NotifierProvider<OrderNotifier, List<PosOrder>>(() {
-  return OrderNotifier();
+final historyOrdersStreamProvider = StreamProvider<List<PosOrder>>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value([]);
+  
+  final repo = ref.watch(orderRepositoryProvider);
+  return repo.streamHistoryOrders(user.uid);
 });
 
 final pendingOrdersCountProvider = Provider<int>((ref) {
-  return ref.watch(orderProvider).length;
-});
-
-class HistoryNotifier extends Notifier<List<PosOrder>> {
-  @override
-  List<PosOrder> build() {
-    return _mockHistory();
-  }
-
-  List<PosOrder> _mockHistory() {
-    return [
-      PosOrder(
-        id: '101',
-        items: [
-          OrderItem(name: '두바이초콜릿', quantity: 1),
-          OrderItem(name: '생수', quantity: 1),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 31),
-        customerName: '팽이초콜릿',
-        contact: '01027526381',
-        customerEmail: 'pang2chocolate@naver.com',
-        totalAmount: 23600,
-        status: OrderStatus.completed,
-      ),
-      PosOrder(
-        id: '102',
-        items: [
-          OrderItem(name: '두바이초콜릿', quantity: 1),
-          OrderItem(name: '생수', quantity: 1),
-        ],
-        paymentTime: DateTime(2026, 3, 16, 9, 31),
-        customerName: '팽이초콜릿',
-        contact: '01027526381',
-        customerEmail: 'pang2chocolate@naver.com',
-        totalAmount: 49700,
-        status: OrderStatus.refunded,
-      ),
-    ];
-  }
-
-  void refundOrder(String id) {
-    state = [
-      for (final order in state)
-        if (order.id == id)
-          PosOrder(
-            id: order.id,
-            items: order.items,
-            paymentTime: order.paymentTime,
-            customerName: order.customerName,
-            contact: order.contact,
-            customerEmail: order.customerEmail,
-            totalAmount: order.totalAmount,
-            status: OrderStatus.refunded,
-          )
-        else
-          order,
-    ];
-  }
-}
-
-final historyProvider = NotifierProvider<HistoryNotifier, List<PosOrder>>(() {
-  return HistoryNotifier();
+  final asyncOrders = ref.watch(pendingOrdersStreamProvider);
+  return asyncOrders.value?.length ?? 0;
 });
 
 final completedOrdersCountProvider = Provider<int>((ref) {
-  return ref.watch(historyProvider).where((o) => o.status == OrderStatus.completed).length;
+  final asyncOrders = ref.watch(historyOrdersStreamProvider);
+  return asyncOrders.value?.where((o) => o.status == OrderStatus.completed).length ?? 0;
 });
