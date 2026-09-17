@@ -8,13 +8,31 @@ class OrderItem {
   OrderItem({required this.name, required this.quantity, this.isKitchen = true});
 }
 
+enum OrderStatus {
+  completed,
+  refunded,
+}
+
 class PosOrder {
   final String id;
   final List<OrderItem> items;
   final DateTime paymentTime;
+  final String customerName;
   final String contact;
+  final String customerEmail;
+  final int totalAmount;
+  final OrderStatus status;
 
-  PosOrder({required this.id, required this.items, required this.paymentTime, required this.contact});
+  PosOrder({
+    required this.id,
+    required this.items,
+    required this.paymentTime,
+    this.customerName = '비회원',
+    required this.contact,
+    this.customerEmail = '',
+    required this.totalAmount,
+    this.status = OrderStatus.completed,
+  });
 }
 
 class OrderNotifier extends Notifier<List<PosOrder>> {
@@ -33,7 +51,10 @@ class OrderNotifier extends Notifier<List<PosOrder>> {
           OrderItem(name: '딥 말차 라떼', quantity: 3),
         ],
         paymentTime: DateTime(2026, 3, 16, 9, 31),
+        customerName: '홍길동',
         contact: '01027526381',
+        customerEmail: 'hong@naver.com',
+        totalAmount: 12500,
       ),
       PosOrder(
         id: '2',
@@ -42,6 +63,7 @@ class OrderNotifier extends Notifier<List<PosOrder>> {
         ],
         paymentTime: DateTime(2026, 3, 16, 9, 35),
         contact: '01011112222',
+        totalAmount: 12000,
       ),
       PosOrder(
         id: '3',
@@ -50,6 +72,7 @@ class OrderNotifier extends Notifier<List<PosOrder>> {
         ],
         paymentTime: DateTime(2026, 3, 16, 9, 40),
         contact: '01033334444',
+        totalAmount: 13500,
       ),
       PosOrder(
         id: '4',
@@ -60,6 +83,7 @@ class OrderNotifier extends Notifier<List<PosOrder>> {
         ],
         paymentTime: DateTime(2026, 3, 16, 9, 45),
         contact: '01055556666',
+        totalAmount: 35000,
       ),
       PosOrder(
         id: '5',
@@ -68,6 +92,7 @@ class OrderNotifier extends Notifier<List<PosOrder>> {
         ],
         paymentTime: DateTime(2026, 3, 16, 9, 50),
         contact: '01077778888',
+        totalAmount: 6500,
       ),
       PosOrder(
         id: '6',
@@ -76,6 +101,7 @@ class OrderNotifier extends Notifier<List<PosOrder>> {
         ],
         paymentTime: DateTime(2026, 3, 16, 9, 55),
         contact: '01099990000',
+        totalAmount: 8000,
       ),
     ];
   }
@@ -96,4 +122,69 @@ final orderProvider = NotifierProvider<OrderNotifier, List<PosOrder>>(() {
 
 final pendingOrdersCountProvider = Provider<int>((ref) {
   return ref.watch(orderProvider).length;
+});
+
+class HistoryNotifier extends Notifier<List<PosOrder>> {
+  @override
+  List<PosOrder> build() {
+    return _mockHistory();
+  }
+
+  List<PosOrder> _mockHistory() {
+    return [
+      PosOrder(
+        id: '101',
+        items: [
+          OrderItem(name: '두바이초콜릿', quantity: 1),
+          OrderItem(name: '생수', quantity: 1),
+        ],
+        paymentTime: DateTime(2026, 3, 16, 9, 31),
+        customerName: '팽이초콜릿',
+        contact: '01027526381',
+        customerEmail: 'pang2chocolate@naver.com',
+        totalAmount: 23600,
+        status: OrderStatus.completed,
+      ),
+      PosOrder(
+        id: '102',
+        items: [
+          OrderItem(name: '두바이초콜릿', quantity: 1),
+          OrderItem(name: '생수', quantity: 1),
+        ],
+        paymentTime: DateTime(2026, 3, 16, 9, 31),
+        customerName: '팽이초콜릿',
+        contact: '01027526381',
+        customerEmail: 'pang2chocolate@naver.com',
+        totalAmount: 49700,
+        status: OrderStatus.refunded,
+      ),
+    ];
+  }
+
+  void refundOrder(String id) {
+    state = [
+      for (final order in state)
+        if (order.id == id)
+          PosOrder(
+            id: order.id,
+            items: order.items,
+            paymentTime: order.paymentTime,
+            customerName: order.customerName,
+            contact: order.contact,
+            customerEmail: order.customerEmail,
+            totalAmount: order.totalAmount,
+            status: OrderStatus.refunded,
+          )
+        else
+          order,
+    ];
+  }
+}
+
+final historyProvider = NotifierProvider<HistoryNotifier, List<PosOrder>>(() {
+  return HistoryNotifier();
+});
+
+final completedOrdersCountProvider = Provider<int>((ref) {
+  return ref.watch(historyProvider).where((o) => o.status == OrderStatus.completed).length;
 });

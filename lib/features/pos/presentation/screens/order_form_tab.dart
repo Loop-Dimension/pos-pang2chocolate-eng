@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:vibration/vibration.dart';
 
 import '../providers/order_provider.dart';
 
@@ -24,28 +23,7 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
     super.dispose();
   }
 
-  void _triggerNewOrderAlert() async {
-    // Vibrate
-    bool? hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator == true) {
-      Vibration.vibrate(duration: 500);
-    }
-    
-    // Play Sound
-    // In a real app, you would load an actual mp3 from assets.
-    // For now we just use a system beep or placeholder.
-    // _audioPlayer.play(AssetSource('sounds/bell.mp3'));
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('새로운 주문이 들어왔습니다!'),
-          backgroundColor: Colors.blueAccent,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
+
 
   void _showCancelDialog(String orderId) {
     showDialog(
