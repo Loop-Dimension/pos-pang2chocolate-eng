@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../auth/data/merchant_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/registration/business_hours_builder.dart';
 
 class StoreInfoScreen extends ConsumerStatefulWidget {
   const StoreInfoScreen({super.key});
@@ -31,6 +32,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   String _currentDiscountRate = "3% ~";
   bool _pangiAccountLinked = true;
   String? _profileImageUrl;
+  Map<String, dynamic> _businessHours = {};
 
   @override
   void initState() {
@@ -50,6 +52,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
           _profileImageUrl = data['profileImageUrl'];
           _storeNameController.text = data['storeName'] ?? '';
           _storePhoneController.text = data['storePhone'] ?? '';
+          _businessHours = Map<String, dynamic>.from(data['businessHours'] ?? {});
 
           // Read-only business info
           _bizRegNumController.text = data['businessRegistrationNumber'] ?? '';
@@ -398,18 +401,15 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
             _buildEditableField('가게 이름', _storeNameController, 'storeName', suffix: _buildBlackButton('수정', () => _updateField('storeName', _storeNameController.text))),
             _buildEditableField('가게 전화번호', _storePhoneController, 'storePhone', suffix: _buildBlackButton('수정', () => _updateField('storePhone', _storePhoneController.text))),
             
-            // 4. Business Hours Placeholder (Too complex for full rebuild, mock visual)
-            Center(child: _buildSectionTitle('영업시간')),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8.r)),
-              child: Text(
-                '영업시간 정보는 설정되어 있습니다.\n(상세 편집 UI는 추후 통합)',
-                style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
-              ),
+            // 4. Business Hours
+            BusinessHoursBuilder(
+              initialValue: _businessHours,
+              onChanged: (hours) {
+                _businessHours = hours;
+              },
             ),
+            SizedBox(height: 16.h),
+            Center(child: _buildBlackButton('영업시간 저장', () => _updateField('businessHours', _businessHours))),
             SizedBox(height: 48.h),
 
             // 5. Read-only Business Information

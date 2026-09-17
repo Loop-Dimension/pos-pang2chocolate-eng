@@ -10,8 +10,9 @@ class BreakTime {
 
 class BusinessHoursBuilder extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onChanged;
+  final Map<String, dynamic>? initialValue;
 
-  const BusinessHoursBuilder({super.key, required this.onChanged});
+  const BusinessHoursBuilder({super.key, required this.onChanged, this.initialValue});
 
   @override
   State<BusinessHoursBuilder> createState() => _BusinessHoursBuilderState();
@@ -43,23 +44,65 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
   @override
   void initState() {
     super.initState();
-    for (var day in days) {
-      isClosed[day] = false;
-      openHour[day] = '09';
-      openMin[day] = '00';
-      closeHour[day] = '18';
-      closeMin[day] = '00';
-      breakTimes[day] = [];
+    if (widget.initialValue != null && widget.initialValue!.isNotEmpty) {
+      final initial = widget.initialValue!;
+      final isClosedInit = initial['isClosed'] as Map<String, dynamic>? ?? {};
+      final openInit = initial['openTimes'] as Map<String, dynamic>? ?? {};
+      final closeInit = initial['closeTimes'] as Map<String, dynamic>? ?? {};
+      final breakInit = initial['breakTimes'] as Map<String, dynamic>? ?? {};
+
+      for (var day in days) {
+        isClosed[day] = isClosedInit[day] ?? false;
+        
+        final op = openInit[day] ?? '09:00';
+        final opParts = op.split(':');
+        openHour[day] = opParts[0];
+        openMin[day] = opParts.length > 1 ? opParts[1] : '00';
+
+        final cl = closeInit[day] ?? '18:00';
+        final clParts = cl.split(':');
+        closeHour[day] = clParts[0];
+        closeMin[day] = clParts.length > 1 ? clParts[1] : '00';
+
+        final btList = breakInit[day] as List<dynamic>? ?? [];
+        breakTimes[day] = btList.map((btStr) {
+          final bt = BreakTime();
+          final parts = btStr.split('-');
+          if (parts.length == 2) {
+            final stParts = parts[0].split(':');
+            if (stParts.length == 2) {
+              bt.startHour = stParts[0];
+              bt.startMin = stParts[1];
+            }
+            final endParts = parts[1].split(':');
+            if (endParts.length == 2) {
+              bt.endHour = endParts[0];
+              bt.endMin = endParts[1];
+            }
+          }
+          return bt;
+        }).toList();
+      }
+    } else {
+      for (var day in days) {
+        isClosed[day] = false;
+        openHour[day] = '09';
+        openMin[day] = '00';
+        closeHour[day] = '18';
+        closeMin[day] = '00';
+        breakTimes[day] = [];
+      }
+      isClosed['수'] = true;
+      isClosed['목'] = true;
+      isClosed['금'] = true;
+      isClosed['토'] = true;
+      isClosed['일'] = true;
     }
-    // Set some days to closed by default as seen in mockup
-    isClosed['수'] = true;
-    isClosed['목'] = true;
-    isClosed['금'] = true;
-    isClosed['토'] = true;
-    isClosed['일'] = true;
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notifyChanges();
+      if (widget.initialValue == null || widget.initialValue!.isEmpty) {
+        _notifyChanges();
+      }
     });
   }
 
