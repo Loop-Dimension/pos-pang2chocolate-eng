@@ -11,30 +11,43 @@ class BusinessHoursBuilder extends StatefulWidget {
 }
 
 class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
-  final List<String> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  // Use Korean day names
+  final List<String> days = ['월', '화', '수', '목', '금', '토', '일'];
+  final Map<String, String> fullDays = {
+    '월': '월요일', '화': '화요일', '수': '수요일', '목': '목요일', '금': '금요일', '토': '토요일', '일': '일요일'
+  };
   
-  // Maps day to whether they are closed
   final Map<String, bool> isClosed = {};
   
-  // Maps day to open/close times (simplified as string ranges for now)
-  final Map<String, String> openTimes = {};
-  final Map<String, String> closeTimes = {};
+  // Maps day to open/close times
+  final Map<String, String> openHour = {};
+  final Map<String, String> openMin = {};
+  final Map<String, String> closeHour = {};
+  final Map<String, String> closeMin = {};
 
   @override
   void initState() {
     super.initState();
     for (var day in days) {
       isClosed[day] = false;
-      openTimes[day] = '09:00';
-      closeTimes[day] = '18:00';
+      openHour[day] = '09';
+      openMin[day] = '00';
+      closeHour[day] = '18';
+      closeMin[day] = '00';
     }
+    // Set some days to closed by default as seen in mockup
+    isClosed['수'] = true;
+    isClosed['목'] = true;
+    isClosed['금'] = true;
+    isClosed['토'] = true;
+    isClosed['일'] = true;
   }
 
   void _notifyChanges() {
     widget.onChanged({
       'isClosed': isClosed,
-      'openTimes': openTimes,
-      'closeTimes': closeTimes,
+      'openTimes': openHour.map((k, v) => MapEntry(k, '$v:${openMin[k]}')),
+      'closeTimes': closeHour.map((k, v) => MapEntry(k, '$v:${closeMin[k]}')),
     });
   }
 
@@ -44,64 +57,85 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Business Hours',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          '영업시간',
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.black87),
           textAlign: TextAlign.center,
         ),
         SizedBox(height: 16.h),
         ...days.map((day) {
           final closed = isClosed[day] ?? false;
-          return Container(
-            margin: EdgeInsets.only(bottom: 12.h),
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 40.w,
-                  child: Text(day, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp)),
-                ),
-                if (!closed) ...[
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildTimeDropdown(openTimes[day]!, (val) {
-                          setState(() => openTimes[day] = val!);
-                          _notifyChanges();
-                        }),
-                        const Text('~'),
-                        _buildTimeDropdown(closeTimes[day]!, (val) {
-                          setState(() => closeTimes[day] = val!);
-                          _notifyChanges();
-                        }),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  const Expanded(
-                    child: Text('Closed', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                  ),
+          
+          if (closed) {
+            return Container(
+              margin: EdgeInsets.only(bottom: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC4C4C4),
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${fullDays[day]} 휴무', style: TextStyle(fontSize: 14.sp, color: Colors.black54)),
+                  _buildClosedButton(day, closed),
                 ],
-                SizedBox(width: 8.w),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      isClosed[day] = !closed;
-                    });
-                    _notifyChanges();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: closed ? Colors.black : Colors.grey.shade300,
-                    foregroundColor: closed ? Colors.white : Colors.black,
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 0),
-                    minimumSize: Size(60.w, 32.h),
-                  ),
-                  child: const Text('Rest'),
+              ),
+            );
+          }
+
+          return Container(
+            margin: EdgeInsets.only(bottom: 8.h),
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4.r),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 20.w,
+                      child: Text(day, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                    ),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('오픈', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                          SizedBox(width: 8.w),
+                          _buildTimeDropdown(openHour[day]!, true, (val) {
+                            setState(() => openHour[day] = val!);
+                            _notifyChanges();
+                          }),
+                          const Text(' : '),
+                          _buildTimeDropdown(openMin[day]!, false, (val) {
+                            setState(() => openMin[day] = val!);
+                            _notifyChanges();
+                          }),
+                          SizedBox(width: 8.w),
+                          Text('-', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                          SizedBox(width: 8.w),
+                          Text('마감', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                          SizedBox(width: 8.w),
+                          _buildTimeDropdown(closeHour[day]!, true, (val) {
+                            setState(() => closeHour[day] = val!);
+                            _notifyChanges();
+                          }),
+                          const Text(' : '),
+                          _buildTimeDropdown(closeMin[day]!, false, (val) {
+                            setState(() => closeMin[day] = val!);
+                            _notifyChanges();
+                          }),
+                        ],
+                      ),
+                    ),
+                    _buildClosedButton(day, closed),
+                  ],
                 ),
+                SizedBox(height: 8.h),
+                Text('+ 브레이크타임', style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
               ],
             ),
           );
@@ -110,15 +144,53 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
     );
   }
 
-  Widget _buildTimeDropdown(String currentValue, ValueChanged<String?> onChanged) {
-    return DropdownButton<String>(
-      value: currentValue,
-      underline: const SizedBox(),
-      style: TextStyle(fontSize: 14.sp, color: Colors.black),
-      items: ['09:00', '10:00', '11:00', '12:00', '18:00', '20:00', '22:00']
-          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-          .toList(),
-      onChanged: onChanged,
+  Widget _buildClosedButton(String day, bool isClosedVal) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          isClosed[day] = !isClosedVal;
+        });
+        _notifyChanges();
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: isClosedVal ? Colors.black : const Color(0xFFC4C4C4),
+          borderRadius: BorderRadius.circular(4.r),
+        ),
+        child: Text(
+          '휴무',
+          style: TextStyle(
+            color: isClosedVal ? Colors.white : Colors.black87,
+            fontSize: 12.sp,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeDropdown(String currentValue, bool isHour, ValueChanged<String?> onChanged) {
+    List<String> items = isHour
+        ? List.generate(24, (index) => index.toString().padLeft(2, '0'))
+        : ['00', '15', '30', '45'];
+
+    return Container(
+      height: 30.h,
+      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(4.r),
+        color: Colors.white,
+      ),
+      child: DropdownButton<String>(
+        value: currentValue,
+        underline: const SizedBox(),
+        icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+        style: TextStyle(fontSize: 12.sp, color: Colors.black),
+        items: items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+        onChanged: onChanged,
+      ),
     );
   }
 }
+
