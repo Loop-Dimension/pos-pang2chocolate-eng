@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+class BreakTime {
+  String startHour = '12';
+  String startMin = '00';
+  String endHour = '13';
+  String endMin = '00';
+}
+
 class BusinessHoursBuilder extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onChanged;
 
@@ -24,6 +31,8 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
   final Map<String, String> openMin = {};
   final Map<String, String> closeHour = {};
   final Map<String, String> closeMin = {};
+  
+  final Map<String, List<BreakTime>> breakTimes = {};
 
   @override
   void initState() {
@@ -34,6 +43,7 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
       openMin[day] = '00';
       closeHour[day] = '18';
       closeMin[day] = '00';
+      breakTimes[day] = [];
     }
     // Set some days to closed by default as seen in mockup
     isClosed['수'] = true;
@@ -48,6 +58,7 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
       'isClosed': isClosed,
       'openTimes': openHour.map((k, v) => MapEntry(k, '$v:${openMin[k]}')),
       'closeTimes': closeHour.map((k, v) => MapEntry(k, '$v:${closeMin[k]}')),
+      'breakTimes': breakTimes.map((k, v) => MapEntry(k, v.map((b) => '${b.startHour}:${b.startMin}-${b.endHour}:${b.endMin}').toList())),
     });
   }
 
@@ -141,8 +152,84 @@ class _BusinessHoursBuilderState extends State<BusinessHoursBuilder> {
                     _buildClosedButton(day, closed),
                   ],
                 ),
+                if (breakTimes[day]!.isNotEmpty) ...[
+                  SizedBox(height: 8.h),
+                  ...breakTimes[day]!.asMap().entries.map((entry) {
+                    int idx = entry.key;
+                    BreakTime bt = entry.value;
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 6.h),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('브레이크 타임  시작', style: TextStyle(fontSize: 10.sp, color: Colors.grey)),
+                                  SizedBox(width: 4.w),
+                                  _buildTimeDropdown(bt.startHour, true, (val) {
+                                    setState(() => bt.startHour = val!);
+                                    _notifyChanges();
+                                  }),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 2.w),
+                                    child: Text(':', style: TextStyle(fontSize: 12.sp, color: Colors.black54)),
+                                  ),
+                                  _buildTimeDropdown(bt.startMin, false, (val) {
+                                    setState(() => bt.startMin = val!);
+                                    _notifyChanges();
+                                  }),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                                    child: Text('- 종료', style: TextStyle(fontSize: 10.sp, color: Colors.grey)),
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  _buildTimeDropdown(bt.endHour, true, (val) {
+                                    setState(() => bt.endHour = val!);
+                                    _notifyChanges();
+                                  }),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 2.w),
+                                    child: Text(':', style: TextStyle(fontSize: 12.sp, color: Colors.black54)),
+                                  ),
+                                  _buildTimeDropdown(bt.endMin, false, (val) {
+                                    setState(() => bt.endMin = val!);
+                                    _notifyChanges();
+                                  }),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                breakTimes[day]!.removeAt(idx);
+                              });
+                              _notifyChanges();
+                            },
+                            child: Icon(Icons.cancel, size: 16.w, color: Colors.black),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
                 SizedBox(height: 8.h),
-                Text('+ 브레이크타임', style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      breakTimes[day]!.add(BreakTime());
+                    });
+                    _notifyChanges();
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4.h),
+                    child: Text('+ 브레이크타임', style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
+                  ),
+                ),
               ],
             ),
           );
