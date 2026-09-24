@@ -1,8 +1,9 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:vibration/vibration.dart';
 
 import '../providers/order_provider.dart';
 
@@ -14,16 +15,20 @@ class OrderFormTab extends ConsumerStatefulWidget {
 }
 
 class _OrderFormTabState extends ConsumerState<OrderFormTab> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
   String? _expandedOrderId;
 
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    super.dispose();
+  Future<void> _triggerNewOrderAlert() async {
+    try {
+      SystemSound.play(SystemSoundType.alert);
+    } catch (_) {}
+
+    try {
+      final hasVibrator = await Vibration.hasVibrator();
+      if (hasVibrator == true) {
+        Vibration.vibrate(duration: 500);
+      }
+    } catch (_) {}
   }
-
-
 
   void _showCancelDialog(String orderId) {
     showDialog(
@@ -53,12 +58,21 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for new orders to play sound and trigger vibration
+    ref.listen<AsyncValue<List<PosOrder>>>(pendingOrdersStreamProvider, (previous, next) {
+      if (previous?.value != null && next.value != null) {
+        if (next.value!.length > previous!.value!.length) {
+          _triggerNewOrderAlert();
+        }
+      }
+    });
+
     final pendingOrdersAsync = ref.watch(pendingOrdersStreamProvider);
     final pendingCount = ref.watch(pendingOrdersCountProvider);
     final dateFormatter = DateFormat('yyyy.MM.dd HH:mm');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: const Color(0xFFEBEBEB),
       body: pendingOrdersAsync.when(
         skipLoadingOnReload: true,
         loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
@@ -68,164 +82,178 @@ class _OrderFormTabState extends ConsumerState<OrderFormTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.only(left: 16.w, top: 16.h, bottom: 8.h),
+                padding: EdgeInsets.only(left: 16.w, top: 14.h, bottom: 10.h),
                 child: Text(
                   '미완료 주문 : $pendingCount',
                   style: TextStyle(
                     fontSize: 16.sp,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF8E8E93),
+                    fontWeight: FontWeight.normal,
                   ),
                 ),
               ),
               Expanded(
                 child: orders.isEmpty
-                    ? Center(child: Text('들어온 주문이 없습니다.', style: TextStyle(fontSize: 16.sp, color: Colors.grey)))
+                    ? Center(
+                        child: Text(
+                          '들어온 주문이 없습니다.',
+                          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+                        ),
+                      )
                     : ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
                         itemCount: orders.length,
                         itemBuilder: (context, index) {
                           final order = orders[index];
                           final isExpanded = _expandedOrderId == order.id;
+                          final kitchenItems = order.items.where((item) => item.isKitchen).toList();
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _expandedOrderId = isExpanded ? null : order.id;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: EdgeInsets.only(bottom: 12.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(16.w),
-                      child: Column(
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Products List
-                              Expanded(
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _expandedOrderId = isExpanded ? null : order.id;
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: EdgeInsets.only(bottom: 10.h),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(16.w),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: order.items.map((item) {
-                                    return Padding(
-                                      padding: EdgeInsets.only(bottom: 8.h),
+                                  children: [
+                                    IntrinsicHeight(
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
                                         children: [
+                                          // Products List
                                           Expanded(
-                                            child: Text(
-                                              item.name,
-                                              style: TextStyle(
-                                                fontSize: 16.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black87,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: kitchenItems.map((item) {
+                                                return Padding(
+                                                  padding: EdgeInsets.only(
+                                                    bottom: item == kitchenItems.last ? 0 : 10.h,
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          item.name,
+                                                          style: TextStyle(
+                                                            fontSize: 16.sp,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Colors.black,
+                                                          ),
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 8.w),
+                                                      Text(
+                                                        '${item.quantity}잔',
+                                                        style: TextStyle(
+                                                          fontSize: 16.sp,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.black,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }).toList(),
                                             ),
                                           ),
-                                          SizedBox(width: 8.w),
-                                          Text(
-                                            '${item.quantity}잔',
-                                            style: TextStyle(
-                                              fontSize: 16.sp,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black87,
+                                          SizedBox(width: 14.w),
+                                          // Complete Button
+                                          GestureDetector(
+                                            onTap: () {
+                                              ref.read(orderRepositoryProvider).updateOrderStatus(
+                                                    order.id,
+                                                    OrderStatus.completed,
+                                                  );
+                                            },
+                                            child: Container(
+                                              width: 68.w,
+                                              constraints: BoxConstraints(minHeight: 52.h),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFC4C4C4),
+                                                borderRadius: BorderRadius.circular(8.r),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                '완료',
+                                                style: TextStyle(
+                                                  fontSize: 16.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                              SizedBox(width: 16.w),
-                              // Complete Button
-                              GestureDetector(
-                                onTap: () {
-                                  ref.read(orderRepositoryProvider).updateOrderStatus(order.id, OrderStatus.completed);
-                                },
-                                child: Container(
-                                  width: 60.w,
-                                  // Make it tall enough to match the product list height generally
-                                  height: 80.h, 
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD9D9D9),
-                                    borderRadius: BorderRadius.circular(8.r),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '완료',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
                                     ),
-                                  ),
+
+                                    // Expanded Details Area
+                                    if (isExpanded) ...[
+                                      SizedBox(height: 20.h),
+                                      Text(
+                                        '결제일시:${dateFormatter.format(order.paymentTime)}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        '연락처: ${order.contact}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      SizedBox(height: 16.h),
+                                      GestureDetector(
+                                        onTap: () => _showCancelDialog(order.id),
+                                        child: Container(
+                                          width: 110.w,
+                                          height: 38.h,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFC4C4C4),
+                                            borderRadius: BorderRadius.circular(20.r),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            '주문 취소',
+                                            style: TextStyle(
+                                              fontSize: 15.sp,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                          
-                          // Expanded Area
-                          if (isExpanded) ...[
-                            SizedBox(height: 16.h),
-                            const Divider(color: Color(0xFFEEEEEE), thickness: 1),
-                            SizedBox(height: 16.h),
-                            Text(
-                              '결제일시:${dateFormatter.format(order.paymentTime)}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.black87),
                             ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              '연락처: ${order.contact}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.black87),
-                            ),
-                            SizedBox(height: 24.h),
-                            GestureDetector(
-                              onTap: () => _showCancelDialog(order.id),
-                              child: Container(
-                                width: 120.w,
-                                height: 44.h,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFD9D9D9),
-                                  borderRadius: BorderRadius.circular(22.r),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '주문 취소',
-                                  style: TextStyle(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ]
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      );
-    }),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

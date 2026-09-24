@@ -15,8 +15,8 @@ class CategoryEditScreen extends ConsumerStatefulWidget {
 
 class _CategoryEditScreenState extends ConsumerState<CategoryEditScreen> {
   void _addCategory() async {
-    final user = ref.read(authStateProvider).value;
-    if (user == null) return;
+    final merchantId = ref.read(activeMerchantIdProvider);
+    if (merchantId == null) return;
 
     String? newName = await showDialog<String>(
       context: context,
@@ -57,7 +57,7 @@ class _CategoryEditScreenState extends ConsumerState<CategoryEditScreen> {
 
       final newCat = PosCategory(
         id: '',
-        merchantId: user.uid,
+        merchantId: merchantId,
         name: newName,
         orderIndex: maxOrderIndex + 1,
         showInSelfOrder: false,
@@ -108,7 +108,7 @@ class _CategoryEditScreenState extends ConsumerState<CategoryEditScreen> {
     // Remove the item from oldIndex
     final PosCategory item = updatedList.removeAt(oldIndex);
 
-    // Insert the item at newIndex
+    // Insert the item at newIndex (already adjusted by onReorderItem)
     updatedList.insert(newIndex, item);
 
     // Update orderIndex for all items
@@ -152,121 +152,121 @@ class _CategoryEditScreenState extends ConsumerState<CategoryEditScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.only(left: 24.w, top: 16.h, bottom: 8.h),
+                padding: EdgeInsets.only(left: 20.w, top: 12.h, bottom: 8.h),
                 child: Text(
                   '셀프주문\n노출',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
+                    height: 1.2,
                   ),
                 ),
               ),
               Expanded(
                 child: ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
                   padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  itemCount: categories.length + 1,
+                  itemCount: categories.length,
                   onReorderItem: (oldIndex, newIndex) {
-                    if (oldIndex < categories.length &&
-                        newIndex <= categories.length) {
-                      _onReorder(oldIndex, newIndex, categories);
-                    }
+                    _onReorder(oldIndex, newIndex, categories);
                   },
                   proxyDecorator: (child, index, animation) {
                     return Material(color: Colors.transparent, child: child);
                   },
-                  itemBuilder: (context, index) {
-                    if (index == categories.length) {
-                      // The + button at the end
-                      return Container(
-                        key: const ValueKey('add_button'),
-                        padding: EdgeInsets.symmetric(
-                          vertical: 8.h,
-                          horizontal: 8.w,
+                  footer: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 48.w), // Offset checkbox width
+                        GestureDetector(
+                          onTap: _addCategory,
+                          child: Container(
+                            constraints: BoxConstraints(minWidth: 100.w),
+                            padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFBCBCBC),
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.add,
+                              size: 32.sp,
+                              color: const Color(0xFF757575),
+                            ),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return ReorderableDelayedDragStartListener(
+                      key: ValueKey(category.id),
+                      index: index,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 8.w),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SizedBox(width: 48.w), // Offset to align with pills
-                            GestureDetector(
-                              onTap: _addCategory,
-                              child: Container(
-                                width: 120.w,
-                                height: 50.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  borderRadius: BorderRadius.circular(25.r),
-                                ),
-                                child: Icon(
-                                  Icons.add,
-                                  size: 28.w,
-                                  color: Colors.grey.shade600,
-                                ),
+                            Checkbox(
+                              value: category.showInSelfOrder,
+                              onChanged: (val) => _toggleSelfOrder(category, val),
+                              activeColor: Colors.black,
+                              checkColor: Colors.white,
+                              side: const BorderSide(color: Colors.black87, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(2.r),
                               ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  constraints: BoxConstraints(minWidth: 100.w),
+                                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFBCBCBC),
+                                    borderRadius: BorderRadius.circular(24.r),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    category.name,
+                                    style: TextStyle(
+                                      fontSize: 16.sp,
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: -8.w,
+                                  top: -8.h,
+                                  child: GestureDetector(
+                                    onTap: () => _deleteCategory(category),
+                                    child: Container(
+                                      width: 24.w,
+                                      height: 24.w,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFBCBCBC),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2.5),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 14.sp,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      );
-                    }
-
-                    final category = categories[index];
-                    return Container(
-                      key: ValueKey(category.id),
-                      padding: EdgeInsets.symmetric(
-                        vertical: 8.h,
-                        horizontal: 8.w,
-                      ),
-                      child: Row(
-                        children: [
-                          Checkbox(
-                            value: category.showInSelfOrder,
-                            onChanged: (val) => _toggleSelfOrder(category, val),
-                            activeColor: Colors.black,
-                          ),
-                          SizedBox(width: 8.w),
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                width: 120.w,
-                                height: 50.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  borderRadius: BorderRadius.circular(25.r),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  category.name,
-                                  style: TextStyle(
-                                    fontSize: 16.sp,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: -6.w,
-                                top: -6.h,
-                                child: GestureDetector(
-                                  onTap: () => _deleteCategory(category),
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.cancel,
-                                      size: 24.w,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Icon(Icons.drag_handle, color: Colors.grey.shade400),
-                        ],
                       ),
                     );
                   },

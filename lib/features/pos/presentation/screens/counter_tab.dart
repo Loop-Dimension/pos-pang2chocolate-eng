@@ -7,6 +7,12 @@ import '../../data/category_repository.dart';
 import '../providers/cart_provider.dart';
 import '../providers/inventory_provider.dart';
 import '../widgets/checkout_cart_sheet.dart';
+import 'inventory_screen.dart';
+import 'category_edit_screen.dart';
+import 'product_management_screen.dart';
+import 'store_info_screen.dart';
+import 'block_type_setting_screen.dart';
+import '../../../../core/helpers/mock_pos_seeder.dart';
 
 class CounterTab extends ConsumerStatefulWidget {
   const CounterTab({super.key});
@@ -18,6 +24,19 @@ class CounterTab extends ConsumerStatefulWidget {
 class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProviderStateMixin {
   TabController? _categoryTabController;
   List<PosCategory> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (kBypassAuthForTesting) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final merchantId = ref.read(activeMerchantIdProvider);
+        if (merchantId != null) {
+          MockPosSeeder.seedMockDataIfEmpty(merchantId);
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -33,6 +52,79 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
     }
   }
 
+  Widget _buildSettingsGear() {
+    return PopupMenuButton<String>(
+      onSelected: (value) async {
+        switch (value) {
+          case 'inventory':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen()));
+            break;
+          case 'categories':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoryEditScreen()));
+            break;
+          case 'products':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductManagementScreen()));
+            break;
+          case 'store_info':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreInfoScreen()));
+            break;
+          case 'block_type_setting':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const BlockTypeSettingScreen()));
+            break;
+          case 'seed_mock':
+            final merchantId = ref.read(activeMerchantIdProvider);
+            if (merchantId != null) {
+              await MockPosSeeder.seedMockDataIfEmpty(merchantId);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('샘플 데이터가 생성되었습니다.')),
+                );
+              }
+            }
+            break;
+        }
+      },
+      offset: Offset(0, 44.h),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      color: Colors.white,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'inventory',
+          child: Text('재고 관리', style: TextStyle(fontSize: 15.sp)),
+        ),
+        PopupMenuItem(
+          value: 'categories',
+          child: Text('카테고리 편집', style: TextStyle(fontSize: 15.sp)),
+        ),
+        PopupMenuItem(
+          value: 'products',
+          child: Text('상품 편집', style: TextStyle(fontSize: 15.sp)),
+        ),
+        PopupMenuItem(
+          value: 'store_info',
+          child: Text('가게 정보', style: TextStyle(fontSize: 15.sp)),
+        ),
+        PopupMenuItem(
+          value: 'block_type_setting',
+          child: Text('블록타입 설정', style: TextStyle(fontSize: 15.sp)),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'seed_mock',
+          child: Text('샘플 데이터 생성 (Mock)', style: TextStyle(fontSize: 15.sp, color: Colors.blue)),
+        ),
+      ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
+        child: Icon(
+          Icons.settings_outlined,
+          color: Colors.black87,
+          size: 22.sp,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesStreamProvider);
@@ -43,7 +135,51 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
       error: (err, stack) => Center(child: Text('에러 발생: $err')),
       data: (categories) {
         if (categories.isEmpty) {
-          return const Center(child: Text('상품 관리에서 카테고리와 상품을 추가해주세요.'));
+          return Column(
+            children: [
+              Container(
+                color: const Color(0xFFF0F0F0),
+                padding: EdgeInsets.only(left: 16.w, right: 12.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('카운터', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                    _buildSettingsGear(),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.inventory_2_outlined, size: 48.sp, color: Colors.grey),
+                      SizedBox(height: 12.h),
+                      Text(
+                        '등록된 카테고리와 상품이 없습니다.',
+                        style: TextStyle(fontSize: 15.sp, color: Colors.grey[700]),
+                      ),
+                      SizedBox(height: 16.h),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final merchantId = ref.read(activeMerchantIdProvider);
+                          if (merchantId != null) {
+                            await MockPosSeeder.seedMockDataIfEmpty(merchantId);
+                          }
+                        },
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('샘플 데이터 생성하기 (Mock)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
         }
 
         _onCategoryChanged(categories);
@@ -52,19 +188,28 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
           children: [
             Column(
               children: [
-                // Category Tabs
+                // Category Tabs with Settings Gear Icon on far right
                 Container(
                   color: const Color(0xFFF0F0F0),
-                  padding: EdgeInsets.symmetric(horizontal: 24.w),
-                  child: TabBar(
-                    controller: _categoryTabController,
-                    indicatorColor: Colors.black,
-                    indicatorWeight: 3.h,
-                    labelColor: Colors.black,
-                    unselectedLabelColor: Colors.grey.shade500,
-                    labelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-                    unselectedLabelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.normal),
-                    tabs: categories.map((c) => Tab(text: c.name)).toList(),
+                  padding: EdgeInsets.only(left: 16.w, right: 12.w),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TabBar(
+                          controller: _categoryTabController,
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          indicatorColor: Colors.black,
+                          indicatorWeight: 3.h,
+                          labelColor: Colors.black,
+                          unselectedLabelColor: Colors.grey.shade500,
+                          labelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                          unselectedLabelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.normal),
+                          tabs: categories.map((c) => Tab(text: c.name)).toList(),
+                        ),
+                      ),
+                      _buildSettingsGear(),
+                    ],
                   ),
                 ),
                 
@@ -80,57 +225,64 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
               ],
             ),
 
-        // Floating Cart Button logic below ...
+        // Bottom Cart Button matching mockup
         Positioned(
-          left: 16.w,
-          right: 16.w,
-          bottom: 24.h,
+          left: 0,
+          right: 0,
+          bottom: 0,
           child: Consumer(builder: (context, ref, child) {
             final cartItemCount = ref.watch(cartItemCountProvider);
             if (cartItemCount == 0) return const SizedBox.shrink(); // Hide if empty
             
-            return GestureDetector(
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => const CheckoutCartSheet(),
-                );
-              },
-              child: Container(
-                height: 56.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(8.w),
-                      decoration: const BoxDecoration(
-                        color: Colors.black,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$cartItemCount',
-                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
-                      ),
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const CheckoutCartSheet(),
+                    );
+                  },
+                  child: Container(
+                    height: 52.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(26.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
                     ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      '장바구니',
-                      style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 26.w,
+                          height: 26.w,
+                          decoration: const BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$cartItemCount',
+                            style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          '장바구니',
+                          style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             );

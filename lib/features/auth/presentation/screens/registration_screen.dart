@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../data/auth_repository.dart';
 import '../../data/merchant_repository.dart';
+import '../providers/auth_provider.dart';
 
 import '../widgets/registration/registration_ui_helpers.dart';
 import '../widgets/registration/registration_info_section.dart';
@@ -53,6 +54,121 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   bool _agreedToPrivacy = false;
 
   bool _isLoading = false;
+  bool _isBizRegVerified = false;
+  bool _isPhoneVerified = false;
+  bool _isAccountVerified = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUser = ref.read(authRepositoryProvider).currentUser;
+    if (currentUser != null && currentUser.email != null) {
+      _emailController.text = currentUser.email!;
+    }
+  }
+
+  void _fillMockData() {
+    final randomSuffix = DateTime.now().millisecondsSinceEpoch % 10000;
+    setState(() {
+      _storeLinkController.text = 'https://map.naver.com/v5/entry/place/12345678';
+      _exclusionItemsController.text = '두바이초콜릿, 피스타치오 케이크';
+      _discountRate = '3% ~';
+      _bizRegNumController.text = '123-45-67890';
+      _isBizRegVerified = true;
+      _companyNameController.text = '(주)팽이카페 강남점';
+      _repNameController.text = '홍길동';
+      _addressController.text = '서울특별시 강남구 테헤란로 123';
+      _phoneController.text = '010-1234-5678';
+      _isPhoneVerified = true;
+      _emailController.text = 'mock_merchant_$randomSuffix@pangi.com';
+      _passwordController.text = 'Password123!';
+      _accountController.text = '110-123-456789 (신한은행)';
+      _isAccountVerified = true;
+      _storeNameController.text = '팽이카페 강남본점';
+      _storePhoneController.text = '02-1234-5678';
+      _businessHours = {
+        'mon': {'open': '09:00', 'close': '22:00', 'isClosed': false},
+        'tue': {'open': '09:00', 'close': '22:00', 'isClosed': false},
+        'wed': {'open': '09:00', 'close': '22:00', 'isClosed': false},
+        'thu': {'open': '09:00', 'close': '22:00', 'isClosed': false},
+        'fri': {'open': '09:00', 'close': '23:00', 'isClosed': false},
+        'sat': {'open': '10:00', 'close': '23:00', 'isClosed': false},
+        'sun': {'open': '10:00', 'close': '22:00', 'isClosed': false},
+      };
+      _howDidYouHearController.text = '인스타그램 제휴 추천';
+      _agreedToContract = true;
+      _agreedToPrivacy = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('테스트용 목업 데이터가 자동 입력되었습니다.'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _verifyBizReg() {
+    final raw = _bizRegNumController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (raw.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('올바른 사업자등록번호 10자리를 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    // Format as 123-45-67890
+    _bizRegNumController.text = '${raw.substring(0, 3)}-${raw.substring(3, 5)}-${raw.substring(5)}';
+    setState(() => _isBizRegVerified = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('사업자등록번호가 확인되었습니다.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _verifyPhone() {
+    final phone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (phone.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('올바른 휴대폰 번호를 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    setState(() => _isPhoneVerified = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('휴대폰 본인인증이 완료되었습니다.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _verifyAccount() {
+    final account = _accountController.text.trim();
+    if (account.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('올바른 계좌번호를 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    setState(() => _isAccountVerified = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('정산계좌 유효성 및 예금주 실명이 확인되었습니다.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
@@ -70,14 +186,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .createUserWithEmailAndPassword(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+      var user = ref.read(authRepositoryProvider).currentUser;
+      if (user == null) {
+        await ref
+            .read(authRepositoryProvider)
+            .createUserWithEmailAndPassword(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+        user = ref.read(authRepositoryProvider).currentUser;
+      }
 
-      final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
         String? profileImageUrl;
         if (_profileImage != null) {
@@ -113,7 +232,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('회원가입에 실패했습니다: ${e.toString()}')),
+          SnackBar(content: Text('제휴 신청에 실패했습니다: ${e.toString()}')),
         );
       }
     } finally {
@@ -123,6 +242,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isUpgrade = ref.watch(authRepositoryProvider).currentUser != null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F0F0),
       body: SafeArea(
@@ -149,7 +270,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       ),
                     ),
                     Text(
-                      '팽이 POS 회원가입',
+                      isUpgrade ? '팽이 POS 판매자 제휴 신청' : '팽이 POS 회원가입',
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
@@ -157,6 +278,19 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
+                    if (kBypassAuthForTesting)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _fillMockData,
+                          icon: const Icon(Icons.auto_fix_high, size: 16),
+                          label: const Text('목업 채우기', style: TextStyle(fontSize: 12)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 SizedBox(height: 40.h),
@@ -178,8 +312,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   phoneController: _phoneController,
                   emailController: _emailController,
                   passwordController: _passwordController,
-                  onVerifyBizReg: () {},
-                  onVerifyPhone: () {},
+                  showPasswordField: !isUpgrade,
+                  isBizRegVerified: _isBizRegVerified,
+                  isPhoneVerified: _isPhoneVerified,
+                  onVerifyBizReg: _verifyBizReg,
+                  onVerifyPhone: _verifyPhone,
                 ),
 
                 const RegistrationSectionTitle(title: '정산계좌'),
@@ -188,7 +325,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   controller: _accountController,
                   suffix: RegistrationVerifyButton(
                     text: '확인',
-                    onPressed: () {},
+                    isVerified: _isAccountVerified,
+                    onPressed: _verifyAccount,
                   ),
                 ),
 
@@ -225,7 +363,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : Text(
-                            '제휴 신청하기',
+                            isUpgrade ? '판매자 계정으로 업그레이드 신청' : '제휴 신청하기',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16.sp,

@@ -26,7 +26,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   final _memoController = TextEditingController();
 
   bool _isUnlimitedStock = false;
-  bool _showOnKitchen = true;
+  bool _showOnKitchen = false;
   bool _showInSelfOrder = true;
 
   List<String> _existingImages = [];
@@ -54,9 +54,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     // However, since productsStreamProvider is family-based on categoryId, we might not have it loaded unless we know the category.
     // If initialCategoryId is provided, we can find it.
     if (widget.initialCategoryId != null) {
-      final user = ref.read(authStateProvider).value;
-      if (user != null) {
-        final products = await ref.read(productRepositoryProvider).streamProducts(user.uid, widget.initialCategoryId!).first;
+      final merchantId = ref.read(activeMerchantIdProvider);
+      if (merchantId != null) {
+        final products = await ref.read(productRepositoryProvider).streamProducts(merchantId, widget.initialCategoryId!).first;
         final product = products.where((p) => p.id == widget.productId).firstOrNull;
         
         if (product != null) {
@@ -91,14 +91,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         setState(() => _isUploadingImage = true);
-        final user = ref.read(authStateProvider).value;
-        if (user != null) {
+        final merchantId = ref.read(activeMerchantIdProvider);
+        if (merchantId != null) {
           final repo = ref.read(productRepositoryProvider);
           final prodId = _editingProduct?.id ?? _draftProductId ?? repo.getNewProductId();
           if (_editingProduct == null && _draftProductId == null) {
              _draftProductId = prodId;
           }
-          final url = await repo.uploadProductImage(image, user.uid, prodId);
+          final url = await repo.uploadProductImage(image, merchantId, prodId);
           setState(() {
             _existingImages.add(url);
           });
@@ -115,8 +115,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   }
 
   void _saveProduct() async {
-    final user = ref.read(authStateProvider).value;
-    if (user == null || _selectedCategoryId == null) {
+    final merchantId = ref.read(activeMerchantIdProvider);
+    if (merchantId == null || _selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('카테고리를 선택해주세요.')));
       return;
     }
@@ -129,7 +129,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       return;
     }
 
-    final price = int.tryParse(_priceController.text.trim()) ?? 0;
+    int price = int.tryParse(_priceController.text.trim()) ?? 0;
     int? stockCount;
     if (!_isUnlimitedStock) {
       stockCount = int.tryParse(_stockController.text.trim());
@@ -144,12 +144,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       
       if (_editingProduct == null) {
         // Find max grid index for this category
-        final existingProducts = await repo.streamProducts(user.uid, _selectedCategoryId!).first;
+        final existingProducts = await repo.streamProducts(merchantId, _selectedCategoryId!).first;
         final maxGrid = existingProducts.isEmpty ? 0 : existingProducts.map((p) => p.gridIndex).reduce((a, b) => a > b ? a : b);
         
         final newProduct = PosProduct(
           id: prodId,
-          merchantId: user.uid,
+          merchantId: merchantId,
           categoryId: _selectedCategoryId!,
           name: _nameController.text.trim(),
           price: price,
@@ -232,74 +232,152 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     return Column(
       children: [
         _buildSectionTitle(title),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(true),
-                child: Container(
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: value ? Colors.black : Colors.white,
-                    borderRadius: BorderRadius.horizontal(left: Radius.circular(8.r)),
-                    border: Border.all(color: value ? Colors.black : Colors.grey.shade300),
+        Container(
+          height: 44.h,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(6.r),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(true),
+                  child: Container(
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: value ? Colors.black : Colors.white,
+                      borderRadius: BorderRadius.horizontal(left: Radius.circular(5.r)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'O',
+                      style: TextStyle(
+                        color: value ? Colors.white : Colors.black87,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text('O', style: TextStyle(color: value ? Colors.white : Colors.black, fontSize: 16.sp, fontWeight: FontWeight.bold)),
                 ),
               ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(false),
-                child: Container(
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: !value ? Colors.black : Colors.white,
-                    borderRadius: BorderRadius.horizontal(right: Radius.circular(8.r)),
-                    border: Border.all(color: !value ? Colors.black : Colors.grey.shade300),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(false),
+                  child: Container(
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: !value ? Colors.black : Colors.white,
+                      borderRadius: BorderRadius.horizontal(right: Radius.circular(5.r)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'X',
+                      style: TextStyle(
+                        color: !value ? Colors.white : Colors.black87,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text('X', style: TextStyle(color: !value ? Colors.white : Colors.black, fontSize: 16.sp, fontWeight: FontWeight.bold)),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildImageThumb({required String url, required VoidCallback onRemove}) {
-    return Container(
-      width: 56.w,
-      height: 56.w,
-      margin: EdgeInsets.only(right: 12.w),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
-            child: Image.network(url, fit: BoxFit.cover),
-          ),
-          Positioned(
-            top: 2,
-            right: 2,
-            child: GestureDetector(
-              onTap: onRemove,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                child: const Icon(Icons.close, size: 14, color: Colors.white),
-              ),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildPhotoSlots() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final slotSize = (totalWidth - (4 * 8.w)) / 5;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(5, (index) {
+            final hasImage = index < _existingImages.length;
+            final imageUrl = hasImage ? _existingImages[index] : null;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onTap: _isUploadingImage
+                      ? null
+                      : () {
+                          if (!hasImage) {
+                            _pickImage();
+                          }
+                        },
+                  child: Container(
+                    width: slotSize,
+                    height: slotSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(color: Colors.black, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: hasImage
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(4.r),
+                            child: Image.network(
+                              imageUrl!,
+                              width: slotSize,
+                              height: slotSize,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : (_isUploadingImage && index == _existingImages.length)
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.w,
+                                child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                              )
+                            : Icon(
+                                Icons.image_outlined,
+                                size: slotSize * 0.55,
+                                color: Colors.black87,
+                              ),
+                  ),
+                ),
+                Positioned(
+                  top: -6.h,
+                  right: -6.w,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (hasImage) {
+                        setState(() {
+                          _existingImages.removeAt(index);
+                        });
+                      }
+                    },
+                    child: Container(
+                      width: 20.w,
+                      height: 20.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFBCBCBC),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.close,
+                        size: 11.sp,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        );
+      },
     );
   }
 
@@ -327,30 +405,33 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             _buildSectionTitle('카테고리 선택'),
             categoriesAsync.when(
               data: (categories) {
-                return Wrap(
-                  spacing: 12.w,
-                  runSpacing: 12.h,
-                  children: categories.map((cat) {
-                    final isSelected = _selectedCategoryId == cat.id;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedCategoryId = cat.id),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.grey.shade400 : Colors.white,
-                          borderRadius: BorderRadius.circular(25.r),
-                        ),
-                        child: Text(
-                          cat.name,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: Colors.black87,
+                return Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12.w,
+                    runSpacing: 10.h,
+                    children: categories.map((cat) {
+                      final isSelected = _selectedCategoryId == cat.id;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCategoryId = cat.id),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFBCBCBC) : Colors.white,
+                            borderRadius: BorderRadius.circular(25.r),
+                          ),
+                          child: Text(
+                            cat.name,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 );
               },
               loading: () => const CircularProgressIndicator(),
@@ -383,10 +464,18 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     });
                   },
                   style: TextButton.styleFrom(
-                    backgroundColor: _isUnlimitedStock ? Colors.black : Colors.grey.shade400,
+                    backgroundColor: const Color(0xFF9E9E9E),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.r)),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   ),
-                  child: Text('설정 안함', style: TextStyle(color: _isUnlimitedStock ? Colors.white : Colors.black87, fontSize: 12.sp)),
+                  child: Text(
+                    '설정 안함',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -398,56 +487,24 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             _buildTogglePair('셀프 주문 노출', _showInSelfOrder, (val) => setState(() => _showInSelfOrder = val)),
 
             _buildSectionTitle('상품 사진'),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  // Add button or Loading Indicator
-                  if (_existingImages.length < 5)
-                    GestureDetector(
-                      onTap: _isUploadingImage ? null : _pickImage,
-                      child: Container(
-                        width: 56.w,
-                        height: 56.w,
-                        margin: EdgeInsets.only(right: 12.w),
-                        decoration: BoxDecoration(
-                          color: _isUploadingImage ? Colors.grey.shade200 : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(color: Colors.black, width: 2),
-                        ),
-                        child: _isUploadingImage 
-                          ? Center(child: SizedBox(width: 20.w, height: 20.w, child: const CircularProgressIndicator(strokeWidth: 2))) 
-                          : Icon(Icons.add_photo_alternate_outlined, size: 32.w),
-                      ),
-                    ),
-                  // Existing images
-                  ..._existingImages.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final url = entry.value;
-                    return _buildImageThumb(
-                      url: url,
-                      onRemove: _isUploadingImage ? () {} : () => setState(() => _existingImages.removeAt(index)),
-                    );
-                  }),
-                ],
-              ),
-            ),
+            _buildPhotoSlots(),
             Padding(
-              padding: EdgeInsets.only(top: 8.h, bottom: 32.h),
+              padding: EdgeInsets.only(top: 8.h, bottom: 28.h),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('1개 ~ 5개 (업로드 완료 전까지 저장 불가)', style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
+                child: Text('1개 ~ 5개', style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500)),
               ),
             ),
 
             SizedBox(
               width: double.infinity,
-              height: 56.h,
+              height: 52.h,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   disabledBackgroundColor: Colors.grey.shade400,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                  elevation: 0,
                 ),
                 onPressed: _isUploadingImage ? null : _saveProduct,
                 child: Text(
@@ -456,7 +513,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 32.h),
+            SizedBox(height: 24.h),
           ],
         ),
       ),

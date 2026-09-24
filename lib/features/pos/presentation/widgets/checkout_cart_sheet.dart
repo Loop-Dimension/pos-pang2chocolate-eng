@@ -204,8 +204,9 @@ class CheckoutCartSheet extends ConsumerWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (c) => QrScanScreen(
-                                  finalPrice: finalMembershipAmount,
-                                  isMembership: true, // Mocking membership for now
+                                  generalPrice: totalAmount,
+                                  membershipPrice: finalMembershipAmount,
+                                  discountPercentage: discountPercentage,
                                 ),
                               ),
                             );

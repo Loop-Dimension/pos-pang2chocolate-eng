@@ -11,6 +11,9 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
   final TextEditingController passwordController;
   final VoidCallback onVerifyBizReg;
   final VoidCallback onVerifyPhone;
+  final bool showPasswordField;
+  final bool isBizRegVerified;
+  final bool isPhoneVerified;
 
   const RegistrationBusinessAuthSection({
     super.key,
@@ -23,6 +26,9 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
     required this.passwordController,
     required this.onVerifyBizReg,
     required this.onVerifyPhone,
+    this.showPasswordField = true,
+    this.isBizRegVerified = false,
+    this.isPhoneVerified = false,
   });
 
   @override
@@ -34,7 +40,11 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
         RegistrationInputBox(
           hint: '사업자등록번호',
           controller: bizRegNumController,
-          suffix: RegistrationVerifyButton(text: '확인', onPressed: onVerifyBizReg),
+          suffix: RegistrationVerifyButton(
+            text: '확인',
+            isVerified: isBizRegVerified,
+            onPressed: onVerifyBizReg,
+          ),
           validator: (val) => val == null || val.isEmpty ? '필수 입력 항목입니다.' : null,
         ),
         RegistrationInputBox(
@@ -55,7 +65,11 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
         RegistrationInputBox(
           hint: '휴대폰 번호',
           controller: phoneController,
-          suffix: RegistrationVerifyButton(text: '본인인증', onPressed: onVerifyPhone),
+          suffix: RegistrationVerifyButton(
+            text: '본인인증',
+            isVerified: isPhoneVerified,
+            onPressed: onVerifyPhone,
+          ),
           validator: (val) {
             if (val == null || val.trim().isEmpty) return '필수 입력 항목입니다.';
             return null;
@@ -72,18 +86,19 @@ class RegistrationBusinessAuthSection extends StatelessWidget {
             return null;
           },
         ),
-        RegistrationInputBox(
-          hint: '비밀번호',
-          controller: passwordController,
-          isPassword: true,
-          validator: (val) {
-            if (val == null || val.isEmpty) return '비밀번호를 입력해 주세요.';
-            if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$').hasMatch(val)) {
-              return '영문, 숫자 포함 8자리 이상 입력해 주세요.';
-            }
-            return null;
-          },
-        ),
+        if (showPasswordField)
+          RegistrationInputBox(
+            hint: '비밀번호',
+            controller: passwordController,
+            isPassword: true,
+            validator: (val) {
+              if (val == null || val.isEmpty) return '비밀번호를 입력해 주세요.';
+              if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$').hasMatch(val)) {
+                return '영문, 숫자 포함 8자리 이상 입력해 주세요.';
+              }
+              return null;
+            },
+          ),
       ],
     );
   }

@@ -12,6 +12,9 @@ class OrderRepository {
   /// Creates a new order directly to Firestore
   Future<void> createOrder(String merchantId, PosOrder order) async {
     final docRef = _orders.doc();
+    final hasKitchenItems = order.items.any((item) => item.isKitchen);
+    final initialStatus = hasKitchenItems ? order.status : OrderStatus.completed;
+
     await docRef.set({
       'merchantId': merchantId,
       'paymentTime': order.paymentTime,
@@ -19,7 +22,7 @@ class OrderRepository {
       'contact': order.contact,
       'customerEmail': order.customerEmail,
       'totalAmount': order.totalAmount,
-      'status': _statusToString(order.status),
+      'status': _statusToString(initialStatus),
       'items': order.items.map((item) => {
         'name': item.name,
         'quantity': item.quantity,
@@ -43,7 +46,7 @@ class OrderRepository {
         .map((snapshot) {
           final orders = snapshot.docs.map(_docToOrder).toList();
           return orders
-              .where((o) => o.status == OrderStatus.pending)
+              .where((o) => o.status == OrderStatus.pending && o.items.any((item) => item.isKitchen))
               .toList()
               ..sort((a, b) => a.paymentTime.compareTo(b.paymentTime));
         });

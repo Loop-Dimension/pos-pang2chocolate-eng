@@ -27,6 +27,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _accountController = TextEditingController();
+  final _pangiAccountController = TextEditingController(text: '팽이');
 
   bool _isLoading = true;
   String _currentDiscountRate = "3% ~";
@@ -41,14 +42,15 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   }
 
   Future<void> _loadData() async {
-    final user = ref.read(authStateProvider).value;
-    if (user != null) {
-      final data = await ref.read(merchantRepositoryProvider).getMerchantData(user.uid).first;
+    final merchantId = ref.read(activeMerchantIdProvider);
+    if (merchantId != null) {
+      final data = await ref.read(merchantRepositoryProvider).getMerchantData(merchantId).first;
       if (data != null && mounted) {
         setState(() {
           _exclusionItemsController.text = data['exclusionItems'] ?? '';
           _currentDiscountRate = data['discountRate'] ?? '3% ~';
           _pangiAccountLinked = data['pangiAccountLinked'] ?? true;
+          _pangiAccountController.text = data['pangiAccountId'] ?? (_pangiAccountLinked ? '팽이' : '');
           _profileImageUrl = data['profileImageUrl'];
           _storeNameController.text = data['storeName'] ?? '';
           _storePhoneController.text = data['storePhone'] ?? '';
@@ -71,9 +73,9 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   }
 
   Future<void> _updateField(String field, dynamic value) async {
-    final user = ref.read(authStateProvider).value;
-    if (user != null) {
-      await ref.read(merchantRepositoryProvider).updateMerchantData(user.uid, {field: value});
+    final merchantId = ref.read(activeMerchantIdProvider);
+    if (merchantId != null) {
+      await ref.read(merchantRepositoryProvider).updateMerchantData(merchantId, {field: value});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('저장되었습니다.')));
       }
@@ -87,54 +89,152 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
       currentPercentage = int.parse(parsed);
     }
 
+    int selectedPercentage = currentPercentage;
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('제휴 할인율 변경'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (int i = currentPercentage; i <= 20; i++)
-                ListTile(
-                  title: Text('$i% ~'),
-                  onTap: () {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+              title: Text(
+                '제휴 할인율 변경',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                textAlign: TextAlign.center,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '제휴 할인율은 기존 할인율($currentPercentage%) 이상으로만\n상향 조정 가능합니다.',
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600, height: 1.4),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Decrease button (disabled if <= currentPercentage)
+                      IconButton(
+                        onPressed: selectedPercentage > currentPercentage
+                            ? () {
+                                setModalState(() => selectedPercentage--);
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.remove_circle_outline,
+                          size: 32.sp,
+                          color: selectedPercentage > currentPercentage ? Colors.black87 : Colors.grey.shade300,
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF2F2F2),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          '$selectedPercentage%',
+                          style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                      ),
+                      // Increase button
+                      IconButton(
+                        onPressed: selectedPercentage < 30
+                            ? () {
+                                setModalState(() => selectedPercentage++);
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.add_circle_outline,
+                          size: 32.sp,
+                          color: selectedPercentage < 30 ? Colors.black87 : Colors.grey.shade300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                  ),
+                  onPressed: () {
                     Navigator.pop(context);
                     setState(() {
-                      _currentDiscountRate = '$i% ~';
+                      _currentDiscountRate = '$selectedPercentage%';
                     });
                     _updateField('discountRate', _currentDiscountRate);
                   },
+                  child: const Text('확인', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
-            ],
-          ),
+              ],
+            );
+          },
         );
-      }
+      },
     );
   }
 
-  void _togglePangiAccount() {
-    final newState = !_pangiAccountLinked;
-    setState(() => _pangiAccountLinked = newState);
-    _updateField('pangiAccountLinked', newState);
+  void _unlinkPangiAccount() async {
+    setState(() {
+      _pangiAccountLinked = false;
+      _pangiAccountController.clear();
+    });
+    await _updateField('pangiAccountLinked', false);
+    await _updateField('pangiAccountId', '');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('팽이초콜릿 계정 연동이 해제되었습니다.')),
+      );
+    }
+  }
+
+  void _requestPangiLink() async {
+    final accountId = _pangiAccountController.text.trim();
+    if (accountId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('팽이초콜릿 계정 아이디를 입력해주세요.')),
+      );
+      return;
+    }
+
+    // Verify account format / simulation matching sign-up logic
+    setState(() {
+      _pangiAccountLinked = true;
+    });
+    await _updateField('pangiAccountLinked', true);
+    await _updateField('pangiAccountId', accountId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('팽이초콜릿 계정($accountId)과 연동되었습니다.')),
+      );
+    }
   }
 
   Future<void> _updateProfileImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      final user = ref.read(authStateProvider).value;
-      if (user != null) {
+      final merchantId = ref.read(activeMerchantIdProvider);
+      if (merchantId != null) {
         if (!mounted) return;
-        // Show loading dialog
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => const Center(child: CircularProgressIndicator()),
         );
         try {
-          final url = await ref.read(merchantRepositoryProvider).uploadProfileImage(image, user.uid);
-          await ref.read(merchantRepositoryProvider).updateMerchantData(user.uid, {'profileImageUrl': url});
+          final url = await ref.read(merchantRepositoryProvider).uploadProfileImage(image, merchantId);
+          await ref.read(merchantRepositoryProvider).updateMerchantData(merchantId, {'profileImageUrl': url});
           if (mounted) {
             Navigator.pop(context); // Close dialog
             setState(() => _profileImageUrl = url);
@@ -151,57 +251,175 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
   }
 
   void _changeSettlementAccount() {
-    final controller = TextEditingController(text: _accountController.text);
+    final repName = _repNameController.text.trim();
+    String selectedBank = 'KB국민은행';
+    final accountNumController = TextEditingController();
+    final holderController = TextEditingController(text: repName);
+    bool isVerified = false;
+    String? verificationMessage;
+
+    final bankList = ['KB국민은행', '신한은행', '우리은행', '하나은행', 'NH농협은행', 'IBK기업은행', '카카오뱅크', '토스뱅크'];
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('정산계좌 변경'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '등록된 대표자명(${_repNameController.text})이 포함된 계좌만 등록 가능합니다.',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+              title: Text(
+                '정산계좌 변경',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+                textAlign: TextAlign.center,
               ),
-              SizedBox(height: 16.h),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: '은행 및 계좌번호 예금주',
-                  hintText: '예: 국민은행 123456789 홍길동',
-                  border: OutlineInputBorder(),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9F9F9),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Text(
+                        '등록된 사업자 정보의 대표자명($repName)과 일치하는 계좌만 등록 가능합니다.',
+                        style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade700, height: 1.4),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text('은행 선택', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 6.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedBank,
+                      items: bankList.map((b) => DropdownMenuItem(value: b, child: Text(b, style: TextStyle(fontSize: 14.sp)))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() {
+                            selectedBank = val;
+                            isVerified = false;
+                            verificationMessage = null;
+                          });
+                        }
+                      },
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    Text('계좌번호', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 6.h),
+                    TextField(
+                      controller: accountNumController,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) {
+                        setModalState(() {
+                          isVerified = false;
+                          verificationMessage = null;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: '숫자만 입력',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    Text('예금주', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 6.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: holderController,
+                            readOnly: true,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isVerified ? Colors.green : Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+                          ),
+                          onPressed: () {
+                            final accNum = accountNumController.text.trim();
+                            if (accNum.length < 7) {
+                              setModalState(() {
+                                isVerified = false;
+                                verificationMessage = '올바른 계좌번호를 입력해주세요.';
+                              });
+                              return;
+                            }
+                            final holder = holderController.text.trim();
+                            if (holder == repName && repName.isNotEmpty) {
+                              setModalState(() {
+                                isVerified = true;
+                                verificationMessage = '✔ 대표자명과 예금주가 일치합니다.';
+                              });
+                            } else {
+                              setModalState(() {
+                                isVerified = false;
+                                verificationMessage = '사업자 정보의 대표자명과 불일치합니다.';
+                              });
+                            }
+                          },
+                          child: Text(
+                            isVerified ? '인증완료' : '실명확인',
+                            style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (verificationMessage != null) ...[
+                      SizedBox(height: 8.h),
+                      Text(
+                        verificationMessage!,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: isVerified ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소', style: TextStyle(color: Colors.black)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-              onPressed: () {
-                final newValue = controller.text.trim();
-                final repName = _repNameController.text.trim();
-                if (newValue.isEmpty) return;
-                
-                // Simple validation: the new value must contain the representative name
-                if (!newValue.contains(repName)) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('대표자명과 예금주가 일치하지 않습니다.')));
-                  return;
-                }
-                
-                Navigator.pop(context);
-                setState(() => _accountController.text = newValue);
-                _updateField('settlementAccount', newValue);
-              },
-              child: const Text('변경', style: TextStyle(color: Colors.white)),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isVerified ? Colors.black : Colors.grey.shade400,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                  ),
+                  onPressed: isVerified
+                      ? () {
+                          final newAccountStr = '$selectedBank ${accountNumController.text.trim()} $repName';
+                          Navigator.pop(context);
+                          setState(() => _accountController.text = newAccountStr);
+                          _updateField('settlementAccount', newAccountStr);
+                        }
+                      : null,
+                  child: const Text('변경', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
         );
-      }
+      },
     );
   }
 
@@ -322,7 +540,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
             SizedBox(height: 48.h),
 
             // 2. Editable Fields
-            _buildEditableField('반경 3km 내 독점 품목', _exclusionItemsController, 'exclusionItems', suffix: _buildBlackButton('수정', () => _updateField('exclusionItems', _exclusionItemsController.text))),
+            _buildEditableField('반경 3km 내 독점 품목', _exclusionItemsController, 'exclusionItems', readOnly: true),
             
             Padding(
               padding: EdgeInsets.only(bottom: 24.h),
@@ -337,7 +555,7 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                         child: Container(
                           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8.r)),
-                          child: Text(_currentDiscountRate, style: TextStyle(fontSize: 16.sp)),
+                          child: Text(_currentDiscountRate, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
                         ),
                       ),
                       SizedBox(width: 8.w),
@@ -363,14 +581,38 @@ class _StoreInfoScreenState extends ConsumerState<StoreInfoScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8.r)),
-                          child: Text(_pangiAccountLinked ? '팽이' : '연동 안됨', style: TextStyle(fontSize: 16.sp, color: _pangiAccountLinked ? Colors.black : Colors.grey)),
-                        ),
+                        child: _pangiAccountLinked
+                            ? Container(
+                                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8.r)),
+                                child: Text(
+                                  _pangiAccountController.text.isNotEmpty ? _pangiAccountController.text : '팽이',
+                                  style: TextStyle(fontSize: 16.sp, color: Colors.black87, fontWeight: FontWeight.w500),
+                                ),
+                              )
+                            : TextField(
+                                controller: _pangiAccountController,
+                                decoration: InputDecoration(
+                                  hintText: '팽이초콜릿 아이디 입력',
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                ),
+                              ),
                       ),
                       SizedBox(width: 8.w),
-                      _buildBlackButton(_pangiAccountLinked ? '연동 해제' : '연동 요청', _togglePangiAccount),
+                      _buildBlackButton(
+                        _pangiAccountLinked ? '연동 해제' : '연동 요청',
+                        _pangiAccountLinked ? _unlinkPangiAccount : _requestPangiLink,
+                      ),
                     ],
                   ),
                 ],

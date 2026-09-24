@@ -4,17 +4,17 @@ import '../../data/category_repository.dart';
 import '../../data/product_repository.dart';
 
 final categoriesStreamProvider = StreamProvider<List<PosCategory>>((ref) {
-  final user = ref.watch(authStateProvider).value;
-  if (user == null) return Stream.value([]);
+  final merchantId = ref.watch(activeMerchantIdProvider);
+  if (merchantId == null) return Stream.value([]);
   
   final repo = ref.watch(categoryRepositoryProvider);
-  return repo.streamCategories(user.uid);
+  return repo.streamCategories(merchantId);
 });
 
 final productsStreamProvider = StreamProvider.family<List<PosProduct>, String>((ref, categoryId) {
-  final user = ref.watch(authStateProvider).value;
-  if (user == null || categoryId.isEmpty) return Stream.value([]);
+  final merchantId = ref.watch(activeMerchantIdProvider);
+  if (merchantId == null || categoryId.isEmpty) return Stream.value([]);
   
   final repo = ref.watch(productRepositoryProvider);
-  return repo.streamProducts(user.uid, categoryId);
+  return repo.streamProducts(merchantId, categoryId);
 });

@@ -167,48 +167,59 @@ class _ProductGridTab extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
             error: (err, stack) => Center(child: Text('에러 발생: $err')),
             data: (products) {
-              return GridView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  crossAxisSpacing: 8.w,
-                  mainAxisSpacing: 8.h,
-                  childAspectRatio: 1.5,
-                ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidth = (constraints.maxWidth - 32.w - 24.w) / 4;
+                  final itemHeight = itemWidth / 1.05;
 
-                  // DragTarget to receive reordered items
-                  return DragTarget<int>(
-                    onAcceptWithDetails: (details) {
-                      onReorder(details.data, index, products);
-                    },
-                    builder: (context, candidateData, rejectedData) {
-                      final isHovered = candidateData.isNotEmpty;
-                      
-                      return LongPressDraggable<int>(
-                        data: index,
-                        feedback: Material(
-                          color: Colors.transparent,
-                          child: Opacity(
-                            opacity: 0.8,
-                            child: _buildProductCard(context, product, true),
-                          ),
-                        ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.3,
-                          child: _buildProductCard(context, product, false),
-                        ),
-                        child: Container(
-                          decoration: isHovered
-                              ? BoxDecoration(
-                                  border: Border.all(color: Colors.blue, width: 2),
-                                  borderRadius: BorderRadius.circular(8.r),
-                                )
-                              : null,
-                          child: _buildProductCard(context, product, false),
-                        ),
+                  return GridView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 8.w,
+                      mainAxisSpacing: 8.h,
+                      childAspectRatio: 1.05,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+
+                      // DragTarget to receive reordered items
+                      return DragTarget<int>(
+                        onAcceptWithDetails: (details) {
+                          onReorder(details.data, index, products);
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          final isHovered = candidateData.isNotEmpty;
+
+                          return LongPressDraggable<int>(
+                            data: index,
+                            feedback: Material(
+                              color: Colors.transparent,
+                              child: SizedBox(
+                                width: itemWidth,
+                                height: itemHeight,
+                                child: Opacity(
+                                  opacity: 0.85,
+                                  child: _buildProductCard(context, product, true),
+                                ),
+                              ),
+                            ),
+                            childWhenDragging: Opacity(
+                              opacity: 0.3,
+                              child: _buildProductCard(context, product, false),
+                            ),
+                            child: Container(
+                              decoration: isHovered
+                                  ? BoxDecoration(
+                                      border: Border.all(color: Colors.black, width: 2),
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    )
+                                  : null,
+                              child: _buildProductCard(context, product, false),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -235,6 +246,9 @@ class _ProductGridTab extends ConsumerWidget {
             );
           },
           child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8.r),
@@ -243,8 +257,14 @@ class _ProductGridTab extends ConsumerWidget {
             alignment: Alignment.center,
             child: Text(
               product.name,
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -255,11 +275,19 @@ class _ProductGridTab extends ConsumerWidget {
             child: GestureDetector(
               onTap: () => onDelete(product),
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                width: 22.w,
+                height: 22.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFBCBCBC),
                   shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: Icon(Icons.cancel, size: 24.w, color: Colors.grey.shade400),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.close,
+                  size: 13.sp,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),

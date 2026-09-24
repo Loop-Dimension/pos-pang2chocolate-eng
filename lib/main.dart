@@ -6,24 +6,34 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables
   await dotenv.load(fileName: ".env");
-  
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
-  runApp(
-    const ProviderScope(
-      child: PangPosApp(),
-    ),
-  );
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  if (kBypassAuthForTesting) {
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: 'test_merchant_mock@pangi.com',
+          password: 'Password123!',
+        );
+      }
+    } catch (e) {
+      debugPrint('Auto-login for testing skipped/failed: $e');
+    }
+  }
+
+  runApp(const ProviderScope(child: PangPosApp()));
 }
 
 class PangPosApp extends ConsumerWidget {

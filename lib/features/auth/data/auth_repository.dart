@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   final auth = FirebaseAuth.instance;
   final tenantId = dotenv.env['TENANT_ID'];
-  if (tenantId != null && tenantId.isNotEmpty) {
-    auth.tenantId = tenantId;
+  if (tenantId != null && tenantId.trim().isNotEmpty) {
+    auth.tenantId = tenantId.trim();
+  } else {
+    auth.tenantId = null;
   }
   return auth;
 });
@@ -28,6 +30,10 @@ class AuthRepository {
     await _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
+  Future<UserCredential> signInWithCustomToken(String token) async {
+    return await _auth.signInWithCustomToken(token);
+  }
+
   Future<void> createUserWithEmailAndPassword(
     String email,
     String password,
@@ -44,5 +50,22 @@ class AuthRepository {
 
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  Future<IdTokenResult?> getIdTokenResult([bool forceRefresh = false]) async {
+    return await _auth.currentUser?.getIdTokenResult(forceRefresh);
+  }
+
+  Future<bool> isSeller() async {
+    final tokenResult = await getIdTokenResult(true);
+    final claims = tokenResult?.claims;
+    if (claims != null && (claims['role'] == 'seller' || claims['isApproved'] == true)) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
   }
 }

@@ -43,19 +43,19 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) {
 });
 
 final pendingOrdersStreamProvider = StreamProvider<List<PosOrder>>((ref) {
-  final user = ref.watch(authStateProvider).value;
-  if (user == null) return Stream.value([]);
+  final merchantId = ref.watch(activeMerchantIdProvider);
+  if (merchantId == null) return Stream.value([]);
   
   final repo = ref.watch(orderRepositoryProvider);
-  return repo.streamPendingOrders(user.uid);
+  return repo.streamPendingOrders(merchantId);
 });
 
 final historyOrdersStreamProvider = StreamProvider<List<PosOrder>>((ref) {
-  final user = ref.watch(authStateProvider).value;
-  if (user == null) return Stream.value([]);
+  final merchantId = ref.watch(activeMerchantIdProvider);
+  if (merchantId == null) return Stream.value([]);
   
   final repo = ref.watch(orderRepositoryProvider);
-  return repo.streamHistoryOrders(user.uid);
+  return repo.streamHistoryOrders(merchantId);
 });
 
 final pendingOrdersCountProvider = Provider<int>((ref) {

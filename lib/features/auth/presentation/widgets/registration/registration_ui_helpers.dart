@@ -106,11 +106,13 @@ class _RegistrationInputBoxState extends State<RegistrationInputBox> {
 class RegistrationVerifyButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
+  final bool isVerified;
 
   const RegistrationVerifyButton({
     super.key,
     required this.text,
     this.onPressed,
+    this.isVerified = false,
   });
 
   @override
@@ -119,18 +121,27 @@ class RegistrationVerifyButton extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         margin: EdgeInsets.only(right: 4.w),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: isVerified ? Colors.green.shade700 : Colors.black,
           borderRadius: BorderRadius.circular(4.r),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isVerified) ...[
+              Icon(Icons.check, size: 14.sp, color: Colors.white),
+              SizedBox(width: 4.w),
+            ],
+            Text(
+              isVerified ? '완료' : text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

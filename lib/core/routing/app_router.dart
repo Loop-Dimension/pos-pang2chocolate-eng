@@ -11,8 +11,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStatusProvider);
 
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: kBypassAuthForTesting ? '/pos' : '/login',
     redirect: (context, state) {
+      if (kBypassAuthForTesting) {
+        return null; // Unrestricted navigation for testing
+      }
+
       final isLoginRoute = state.matchedLocation == '/login';
       final isRegisterRoute = state.matchedLocation == '/register';
       final isWaitingRoute = state.matchedLocation == '/waiting';
@@ -21,12 +25,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         case AuthStatus.unauthenticated:
           if (!isLoginRoute && !isRegisterRoute) return '/login';
           break;
+        case AuthStatus.authenticatedNoMerchant:
+          if (!isRegisterRoute) return '/register';
+          break;
         case AuthStatus.pendingApproval:
           if (isRegisterRoute) return null; // Do not interrupt registration flow
           if (!isWaitingRoute) return '/waiting';
           break;
         case AuthStatus.approved:
-          if (isLoginRoute || isWaitingRoute) return '/pos';
+          if (isLoginRoute || isWaitingRoute || isRegisterRoute) return '/pos';
           break;
       }
       return null; // No redirect needed

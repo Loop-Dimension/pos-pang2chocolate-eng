@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
 import 'counter_tab.dart';
 import 'order_form_tab.dart';
 import 'order_history_tab.dart';
-import 'category_edit_screen.dart';
-import 'inventory_screen.dart';
-import 'product_management_screen.dart';
-import 'store_info_screen.dart';
-import 'block_type_setting_screen.dart';
 
 class PosDashboardScreen extends StatefulWidget {
   const PosDashboardScreen({super.key});
@@ -45,100 +42,40 @@ class _PosDashboardScreenState extends State<PosDashboardScreen> with SingleTick
               child: Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      height: 44.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(22.r),
-                      ),
-                      child: TabBar(
-                        controller: _tabController,
-                        indicator: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        dividerColor: Colors.transparent,
-                        labelColor: Colors.black87,
-                        unselectedLabelColor: Colors.grey.shade500,
-                        labelStyle: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
-                        unselectedLabelStyle: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
-                        tabs: const [
-                          Tab(text: '카운터'),
-                          Tab(text: '주문서'),
-                          Tab(text: '주문내역'),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
                       ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: Colors.black87,
+                      unselectedLabelColor: Colors.grey.shade500,
+                      labelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                      unselectedLabelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500),
+                      tabs: const [
+                        Tab(text: '카운터'),
+                        Tab(text: '주문서'),
+                        Tab(text: '주문내역'),
+                      ],
                     ),
                   ),
-                  SizedBox(width: 8.w),
-                  // Settings Icon Tab
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'inventory':
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen()));
-                          break;
-                        case 'categories':
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoryEditScreen()));
-                          break;
-                        case 'products':
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductManagementScreen()));
-                          break;
-                        case 'store_info':
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreInfoScreen()));
-                          break;
-                        case 'block_type_setting':
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BlockTypeSettingScreen()));
-                          break;
-                      }
-                    },
-                    offset: Offset(0, 50.h),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                    color: Colors.white,
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'inventory',
-                        child: Text('재고 관리', style: TextStyle(fontSize: 16.sp)),
-                      ),
-                      PopupMenuItem(
-                        value: 'categories',
-                        child: Text('카테고리 편집', style: TextStyle(fontSize: 16.sp)),
-                      ),
-                      PopupMenuItem(
-                        value: 'products',
-                        child: Text('상품 편집', style: TextStyle(fontSize: 16.sp)),
-                      ),
-                      PopupMenuItem(
-                        value: 'store_info',
-                        child: Text('가게 정보', style: TextStyle(fontSize: 16.sp)),
-                      ),
-                      PopupMenuItem(
-                        value: 'block_type_setting',
-                        child: Text('블록타입 설정', style: TextStyle(fontSize: 16.sp)),
-                      ),
-                    ],
-                    child: Container(
-                      width: 44.h,
-                      height: 44.h,
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.settings_outlined,
-                        color: Colors.grey.shade500,
-                        size: 24.w,
-                      ),
+                  if (kBypassAuthForTesting) ...[
+                    SizedBox(width: 8.w),
+                    IconButton(
+                      tooltip: '회원가입 / 제휴신청 테스트',
+                      icon: const Icon(Icons.assignment_ind_outlined, color: Colors.black54),
+                      onPressed: () => context.push('/register'),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
