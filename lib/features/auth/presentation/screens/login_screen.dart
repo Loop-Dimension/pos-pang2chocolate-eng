@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../data/auth_repository.dart';
@@ -72,23 +71,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _onPangiLoginPressed() async {
-    const webAuthUrl = 'https://us-central1-e-commerce-app-34fb2.cloudfunctions.net/pangiLoginWeb?redirect_uri=pangi-pos://login-callback';
-    final uri = Uri.parse(webAuthUrl);
-
-    // Try launching external browser SSO endpoint first
-    try {
-      final canLaunch = await canLaunchUrl(uri);
-      if (canLaunch) {
-        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (launched) return;
-      }
-    } catch (_) {}
-
-    // Fallback: If browser cannot launch or endpoint is offline, show Pangi ID modal
-    if (mounted) {
-      _showPangiLoginModal();
-    }
+  void _onPangiLoginPressed() {
+    _showPangiLoginModal();
   }
 
   void _showPangiLoginModal() {

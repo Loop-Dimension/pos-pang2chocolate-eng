@@ -22,8 +22,8 @@ final sellerClaimProvider = FutureProvider<bool>((ref) async {
 });
 
 /// Toggle to bypass authentication for testing.
-/// Set to true so you can freely test POS dashboard, registration, etc., without logging in.
-const bool kBypassAuthForTesting = true;
+/// Defaults to false for production / real login.
+const bool kBypassAuthForTesting = false;
 const String kMockMerchantId = 'dCHIH0HBN4X8EtJCwYZFqBAWF9E3';
 
 final activeMerchantIdProvider = Provider<String?>((ref) {
