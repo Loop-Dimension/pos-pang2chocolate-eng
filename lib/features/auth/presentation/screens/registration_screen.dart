@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../data/auth_repository.dart';
 import '../../data/merchant_repository.dart';
-import '../providers/auth_provider.dart';
 
 import '../widgets/registration/registration_ui_helpers.dart';
 import '../widgets/registration/registration_info_section.dart';
@@ -65,47 +64,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     if (currentUser != null && currentUser.email != null) {
       _emailController.text = currentUser.email!;
     }
-  }
-
-  void _fillMockData() {
-    final randomSuffix = DateTime.now().millisecondsSinceEpoch % 10000;
-    setState(() {
-      _storeLinkController.text = 'https://map.naver.com/v5/entry/place/12345678';
-      _exclusionItemsController.text = '두바이초콜릿, 피스타치오 케이크';
-      _discountRate = '3% ~';
-      _bizRegNumController.text = '123-45-67890';
-      _isBizRegVerified = true;
-      _companyNameController.text = '(주)팽이카페 강남점';
-      _repNameController.text = '홍길동';
-      _addressController.text = '서울특별시 강남구 테헤란로 123';
-      _phoneController.text = '010-1234-5678';
-      _isPhoneVerified = true;
-      _emailController.text = 'mock_merchant_$randomSuffix@pangi.com';
-      _passwordController.text = 'Password123!';
-      _accountController.text = '110-123-456789 (신한은행)';
-      _isAccountVerified = true;
-      _storeNameController.text = '팽이카페 강남본점';
-      _storePhoneController.text = '02-1234-5678';
-      _businessHours = {
-        'mon': {'open': '09:00', 'close': '22:00', 'isClosed': false},
-        'tue': {'open': '09:00', 'close': '22:00', 'isClosed': false},
-        'wed': {'open': '09:00', 'close': '22:00', 'isClosed': false},
-        'thu': {'open': '09:00', 'close': '22:00', 'isClosed': false},
-        'fri': {'open': '09:00', 'close': '23:00', 'isClosed': false},
-        'sat': {'open': '10:00', 'close': '23:00', 'isClosed': false},
-        'sun': {'open': '10:00', 'close': '22:00', 'isClosed': false},
-      };
-      _howDidYouHearController.text = '인스타그램 제휴 추천';
-      _agreedToContract = true;
-      _agreedToPrivacy = true;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('테스트용 목업 데이터가 자동 입력되었습니다.'),
-        backgroundColor: Colors.blue,
-      ),
-    );
   }
 
   void _verifyBizReg() {
@@ -278,19 +236,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (kBypassAuthForTesting)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: _fillMockData,
-                          icon: const Icon(Icons.auto_fix_high, size: 16),
-                          label: const Text('목업 채우기', style: TextStyle(fontSize: 12)),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 SizedBox(height: 40.h),

@@ -12,7 +12,6 @@ import 'category_edit_screen.dart';
 import 'product_management_screen.dart';
 import 'store_info_screen.dart';
 import 'block_type_setting_screen.dart';
-import '../../../../core/helpers/mock_pos_seeder.dart';
 
 class CounterTab extends ConsumerStatefulWidget {
   const CounterTab({super.key});
@@ -24,19 +23,6 @@ class CounterTab extends ConsumerStatefulWidget {
 class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProviderStateMixin {
   TabController? _categoryTabController;
   List<PosCategory> _categories = [];
-
-  @override
-  void initState() {
-    super.initState();
-    if (kBypassAuthForTesting) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final merchantId = ref.read(activeMerchantIdProvider);
-        if (merchantId != null) {
-          MockPosSeeder.seedMockDataIfEmpty(merchantId);
-        }
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -71,17 +57,6 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
           case 'block_type_setting':
             Navigator.push(context, MaterialPageRoute(builder: (_) => const BlockTypeSettingScreen()));
             break;
-          case 'seed_mock':
-            final merchantId = ref.read(activeMerchantIdProvider);
-            if (merchantId != null) {
-              await MockPosSeeder.seedMockDataIfEmpty(merchantId);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('샘플 데이터가 생성되었습니다.')),
-                );
-              }
-            }
-            break;
         }
       },
       offset: Offset(0, 44.h),
@@ -107,11 +82,6 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
         PopupMenuItem(
           value: 'block_type_setting',
           child: Text('블록타입 설정', style: TextStyle(fontSize: 15.sp)),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'seed_mock',
-          child: Text('샘플 데이터 생성 (Mock)', style: TextStyle(fontSize: 15.sp, color: Colors.blue)),
         ),
       ],
       child: Padding(
@@ -161,14 +131,14 @@ class _CounterTabState extends ConsumerState<CounterTab> with SingleTickerProvid
                       ),
                       SizedBox(height: 16.h),
                       ElevatedButton.icon(
-                        onPressed: () async {
-                          final merchantId = ref.read(activeMerchantIdProvider);
-                          if (merchantId != null) {
-                            await MockPosSeeder.seedMockDataIfEmpty(merchantId);
-                          }
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CategoryEditScreen()),
+                          );
                         },
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('샘플 데이터 생성하기 (Mock)'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('카테고리 추가하기'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,

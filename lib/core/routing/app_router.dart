@@ -11,12 +11,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStatusProvider);
 
   return GoRouter(
-    initialLocation: kBypassAuthForTesting ? '/pos' : '/login',
+    initialLocation: '/login',
     redirect: (context, state) {
-      if (kBypassAuthForTesting) {
-        return null; // Unrestricted navigation for testing
-      }
-
       final isLoginRoute = state.matchedLocation == '/login';
       final isRegisterRoute = state.matchedLocation == '/register';
       final isWaitingRoute = state.matchedLocation == '/waiting';

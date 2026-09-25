@@ -21,16 +21,8 @@ final sellerClaimProvider = FutureProvider<bool>((ref) async {
   return await ref.watch(authRepositoryProvider).isSeller();
 });
 
-/// Toggle to bypass authentication for testing.
-/// Defaults to false for production / real login.
-const bool kBypassAuthForTesting = false;
-const String kMockMerchantId = 'dCHIH0HBN4X8EtJCwYZFqBAWF9E3';
-
 final activeMerchantIdProvider = Provider<String?>((ref) {
-  final user = ref.watch(authStateProvider).value;
-  if (user != null) return user.uid;
-  if (kBypassAuthForTesting) return kMockMerchantId;
-  return null;
+  return ref.watch(authStateProvider).value?.uid;
 });
 
 final merchantStatusProvider = StreamProvider<String?>((ref) {
@@ -50,10 +42,6 @@ final merchantDataProvider = StreamProvider<Map<String, dynamic>?>((ref) {
 });
 
 final authStatusProvider = Provider<AuthStatus>((ref) {
-  if (kBypassAuthForTesting) {
-    return AuthStatus.approved;
-  }
-
   final user = ref.watch(authStateProvider).value;
   if (user == null) {
     return AuthStatus.unauthenticated;
